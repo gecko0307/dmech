@@ -69,7 +69,7 @@ bool MPRCollisionTest(
     ref Contact c)
 {
     enum float collideEpsilon = 1e-4f;
-    enum maxIterations = 20; //34
+    enum maxIterations = 20;
     
     // Used variables
     Vector3f temp1;

@@ -34,18 +34,11 @@ import dlib.math.matrix3x3;
 import dlib.math.quaternion;
 import dmech.rigidbody;
 
-/*
- * TODO:
- * - move iterative solving routine from constraint classes to World
- * - expose prepare and iteration methods in Constraint class
- */
-
 abstract class Constraint
 {
     RigidBody body1;
     RigidBody body2;
-    
-    //void solve(double delta);
+
     void prepare(double delta);
     void step();
 }
@@ -66,8 +59,6 @@ class BallConstraint: Constraint
     
     float biasFactor = 1.0f;
     float softness = 0.0f;
-    
-    //int iterations = 10;
     
     float softnessOverDt;
     float effectiveMass;
@@ -151,17 +142,6 @@ class BallConstraint: Constraint
             body2.angularVelocity += lambda * jacobian[3] * body2.invInertiaMoment;
         }
     }
-    /*
-    override void solve(double delta)
-    {
-        for (int i = -1; i < iterations; i++)
-        {
-            if (i == -1)
-                prepare(delta);
-            else iteration();
-        }
-    }
-    */
 }
 
 /*
@@ -181,8 +161,6 @@ class SliderConstraint: Constraint
     
     float biasFactor = 1.0f;
     float softness = 0.0f;
-    
-    //int iterations = 10;
     
     float softnessOverDt;
     float effectiveMass;
@@ -275,17 +253,6 @@ class SliderConstraint: Constraint
             body2.angularVelocity += lambda * jacobian[3] * body2.invInertiaMoment;
         }
     }
-/*
-    override void solve(double delta)
-    {
-        for (int i = -1; i < iterations; i++)
-        {
-            if (i == -1)
-                prepare(delta);
-            else iteration();
-        }
-    }
-*/
 }
 
 /*
@@ -301,8 +268,6 @@ class FixedAngleConstraint: Constraint
     
     float biasFactor = 0.05f;
     float softness = 0.0f;
-    
-    int iterations = 10;
     
     float softnessOverDt;
     float effectiveMass;
