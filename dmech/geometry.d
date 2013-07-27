@@ -47,7 +47,8 @@ enum GeomType
     Sphere,
     Box,
     Cylinder,
-    Triangle
+    Triangle,
+    Cone
 }
 
 abstract class Geometry
@@ -245,6 +246,42 @@ class GeomTriangle: Geometry
     }
     
     // TODO: boundingSphere
+}
+
+class GeomCone: Geometry
+{
+    float radius;
+    float height;
+
+    this(float h, float r)
+    {
+        super();
+        type = GeomType.Cone;
+        height = h;
+        radius = r;
+    }
+
+    override Vector3f supportPoint(Vector3f dir)
+    {
+        float zdist = dir[0] * dir[0] + dir[1] * dir[1];
+        float len = zdist + dir[2] * dir[2];
+        zdist = sqrt(zdist);
+        len = sqrt(len);
+        float half_h = height * 0.5;
+        float radius = radius;
+
+        float sin_a = radius / sqrt(radius * radius + 4.0f * half_h * half_h);
+
+        if (dir[2] > len * sin_a)
+            return Vector3f(0.0f, 0.0f, half_h);
+        else if (zdist > 0.0f)
+        {
+            float rad = radius / zdist;
+            return Vector3f(rad * dir[0], rad * dir[1], -half_h);
+        }
+        else
+            return Vector3f(0.0f, 0.0f, -half_h);
+    }
 }
 
 // TODO: cone, capsule, ellipsoid, pyramid, frustum, prism, convex hull etc.
