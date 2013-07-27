@@ -45,7 +45,9 @@ abstract class Constraint
     RigidBody body1;
     RigidBody body2;
     
-    void solve(double delta);
+    //void solve(double delta);
+    void prepare(double delta);
+    void step();
 }
 
 /*
@@ -65,7 +67,7 @@ class BallConstraint: Constraint
     float biasFactor = 1.0f;
     float softness = 0.0f;
     
-    int iterations = 10;
+    //int iterations = 10;
     
     float softnessOverDt;
     float effectiveMass;
@@ -80,7 +82,7 @@ class BallConstraint: Constraint
         localAnchor2 = anchor2;
     }
     
-    void prepare(double delta)
+    override void prepare(double delta)
     {
         Vector3f r1 = body1.orientation.rotate(localAnchor1);
         Vector3f r2 = body2.orientation.rotate(localAnchor2);
@@ -124,7 +126,7 @@ class BallConstraint: Constraint
         }
     }
     
-    void iteration()
+    override void step()
     {
         float jv =
             dot(body1.linearVelocity, jacobian[0]) +
@@ -149,7 +151,7 @@ class BallConstraint: Constraint
             body2.angularVelocity += lambda * jacobian[3] * body2.invInertiaMoment;
         }
     }
-    
+    /*
     override void solve(double delta)
     {
         for (int i = -1; i < iterations; i++)
@@ -159,6 +161,7 @@ class BallConstraint: Constraint
             else iteration();
         }
     }
+    */
 }
 
 /*
@@ -179,7 +182,7 @@ class SliderConstraint: Constraint
     float biasFactor = 1.0f;
     float softness = 0.0f;
     
-    int iterations = 10;
+    //int iterations = 10;
     
     float softnessOverDt;
     float effectiveMass;
@@ -197,7 +200,7 @@ class SliderConstraint: Constraint
                       pointBody2 + body2.position).normalized;
     }
 
-    void prepare(double delta)
+    override void prepare(double delta)
     {
         Vector3f r1 = body1.orientation.rotate(localAnchor1);
         Vector3f r2 = body2.orientation.rotate(localAnchor2);
@@ -247,7 +250,7 @@ class SliderConstraint: Constraint
         }
     }
 
-    void iteration()
+    override void step()
     {
         float jv =
             dot(body1.linearVelocity, jacobian[0]) +
@@ -272,7 +275,7 @@ class SliderConstraint: Constraint
             body2.angularVelocity += lambda * jacobian[3] * body2.invInertiaMoment;
         }
     }
-
+/*
     override void solve(double delta)
     {
         for (int i = -1; i < iterations; i++)
@@ -282,6 +285,7 @@ class SliderConstraint: Constraint
             else iteration();
         }
     }
+*/
 }
 
 /*
@@ -315,7 +319,7 @@ class FixedAngleConstraint: Constraint
         accumulatedImpulse = Vector3f(0.0f, 0.0f, 0.0f);
     }
 
-    void prepare(double delta)
+    override void prepare(double delta)
     {
         effectiveMass = body1.invInertiaMoment + body2.invInertiaMoment;
 
@@ -352,7 +356,7 @@ class FixedAngleConstraint: Constraint
             body2.angularVelocity += -accumulatedImpulse * body2.invInertiaMoment;
     }
 
-    void iteration()
+    override void step()
     {
         Vector3f jv = body1.angularVelocity - body2.angularVelocity;
         Vector3f softnessVector = accumulatedImpulse * softnessOverDt;
@@ -366,16 +370,6 @@ class FixedAngleConstraint: Constraint
 
         if (!body2.isStatic)
             body2.angularVelocity += -lambda * body2.invInertiaMoment;
-    }
-
-    override void solve(double delta)
-    {
-        for (int i = -1; i < iterations; i++)
-        {
-            if (i == -1)
-                prepare(delta);
-            else iteration();
-        }
     }
 }
 

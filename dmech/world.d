@@ -42,19 +42,25 @@ import dmech.collision;
 import dmech.mpr;
 import dmech.contact;
 import dmech.solver;
+import dmech.integrator;
+import dmech.constraint;
 
 class PhysicsWorld
 {
     RigidBody[] bodies;
-    Vector3f gravity = Vector3f(0.0f, -9.81f, 0.0f);
+    Constraint[] constraints;
+
+    Vector3f gravity;
 
     // temporary triangle object to deal with BVH data
     RigidBody tmpTri;
     GeomTriangle tmpTriGeom;
     BVHNode bvhRoot = null;
     
-    this()
+    this(Vector3f grav = Vector3f(0.0f, -9.81f, 0.0f))
     {
+        gravity = grav;
+
         tmpTri = new RigidBody();
         tmpTri.type = BodyType.Static;
         tmpTriGeom = new GeomTriangle(
@@ -82,6 +88,12 @@ class PhysicsWorld
         bodies ~= b;
         return b;
     }
+
+    Constraint addConstraint(Constraint c)
+    {
+        constraints ~= c;
+        return c;
+    }
     
     void update(double delta)
     {
@@ -104,14 +116,15 @@ class PhysicsWorld
             return;
         
         enum iterations = 10;
-        delta /= iterations;
+        double delta2 = delta / iterations;
         
         for(uint iteration = 0; iteration < iterations; iteration++)
         {
             // Integrate velocities and positions
             foreach(b; bodies)
             {
-                b.integrate(delta);
+                //b.integrate2(delta);
+                Integrate.improvedEuler(b, delta2);
                 b.updateGeomTransformation();
             }
 
@@ -217,6 +230,14 @@ class PhysicsWorld
                     solveContact(contacts[deepestContactIdx], iterations);
                 }
             }
+        }
+
+        // Solve constraints
+        foreach(c; constraints)
+        {
+            c.prepare(delta);
+            for (int i = 0; i < iterations; i++)
+                c.step();
         }
         
         foreach(b; bodies)

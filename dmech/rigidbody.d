@@ -105,31 +105,7 @@ class RigidBody
             invInertiaMoment = 1.0f / inertiaMoment;
         }
     }
-    
-    void integrate(double delta)
-    {
-        if (type == BodyType.Dynamic)
-        {
-            Vector3f acceleration;
 
-            acceleration = forceAccumulator * invMass;
-            linearVelocity += acceleration * delta;
-
-            acceleration = torqueAccumulator * invInertiaMoment;
-            angularVelocity += acceleration * delta;
-            
-            linearVelocity *= dampingFactor;
-            angularVelocity *= dampingFactor;
-            //linearVelocity *= pow(dampingFactor, delta);
-            //angularVelocity *= pow(dampingFactor, delta);
-            
-            position += linearVelocity * delta;
-            
-            orientation += 0.5f * Quaternionf(angularVelocity, 0.0f) * orientation * delta;
-            orientation.normalize();
-        }
-    }
-       
     void updateGeomTransformation()
     {
         if (geometry !is null)
