@@ -282,7 +282,9 @@ class GeomCone: Geometry
         else
             return Vector3f(0.0f, 0.0f, -half_h);
     }
+
+    // TODO: boundingSphere
 }
 
-// TODO: cone, capsule, ellipsoid, pyramid, frustum, prism, convex hull etc.
+// TODO: capsule, ellipsoid, pyramid, frustum, prism, convex hull etc.
 
