@@ -48,7 +48,8 @@ enum GeomType
     Box,
     Cylinder,
     Triangle,
-    Cone
+    Cone,
+    Ellipsoid
 }
 
 abstract class Geometry
@@ -286,5 +287,24 @@ class GeomCone: Geometry
     // TODO: boundingSphere
 }
 
-// TODO: capsule, ellipsoid, pyramid, frustum, prism, convex hull etc.
+class GeomEllipsoid: Geometry
+{
+    Vector3f radii;
+
+    this(Vector3f r)
+    {
+        super();
+        type = GeomType.Ellipsoid;
+        radii = r;
+    }
+
+    override Vector3f supportPoint(Vector3f dir)
+    {
+        return dir.normalized * radii;
+    }
+
+    // TODO: boundingSphere
+}
+
+// TODO: capsule, pyramid, frustum, prism, convex hull etc.
 
