@@ -9,7 +9,7 @@ Already implemented:
 * Basic geometry shapes (sphere, box, cylinder, cone, ellipsoid, triangle)
 * Support for any convex shapes defined with their support mapping
 * Arbitrary static trimeshes (optimization via BVH)
-* Ball-socket and slider constraints
+* Constraints: distance, ball-socket, slider
 
 Planned in future:
 * More shapes (capsule, plane, convex hull, etc.)
