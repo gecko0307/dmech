@@ -96,13 +96,25 @@ class RigidBody
     
     void setMass(float m)
     {
-        mass = m;       
-        invMass = 1.0f / mass;
+        mass = m;  
+  
+        if (mass == float.max)
+            invMass = float.min;
+        else   
+            invMass = 1.0f / mass;
         
         if (geometry !is null)
         {
-            inertiaMoment = geometry.inertiaMoment(mass);
-            invInertiaMoment = 1.0f / inertiaMoment;
+            if (mass == float.max)
+            {
+                inertiaMoment = float.max;
+                invInertiaMoment = float.min;
+            }
+            else
+            {
+                inertiaMoment = geometry.inertiaMoment(mass);
+                invInertiaMoment = 1.0f / inertiaMoment;
+            }
         }
     }
 

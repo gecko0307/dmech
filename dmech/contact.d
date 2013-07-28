@@ -41,9 +41,5 @@ struct Contact
     Vector3f point;
     Vector3f normal;
     float penetration;
-    
-    // TODO: move these to RigidBody
-    float friction = 0.8f;
-    float restitution = 0.5f;
 }
 

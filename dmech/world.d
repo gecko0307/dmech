@@ -68,7 +68,7 @@ class PhysicsWorld
             Vector3f(+1.0f, 0.0f,  0.0f),
             Vector3f(-1.0f, 0.0f, +1.0f));
         tmpTri.setGeometry(tmpTriGeom);
-        tmpTri.setMass(1000000.0f); // Virtually infinite mass
+        tmpTri.setMass(float.max); // Virtually infinite mass
     }
     
     RigidBody addDynamicBody(Vector3f pos, float mass)
@@ -83,7 +83,7 @@ class PhysicsWorld
     RigidBody addStaticBody(Vector3f pos)
     {
         auto b = new RigidBody(pos);
-        b.setMass(1000000.0f);
+        b.setMass(float.max);
         b.type = BodyType.Static;
         bodies ~= b;
         return b;
@@ -98,7 +98,8 @@ class PhysicsWorld
     void update(double delta)
     {
         // Apply gravity to dynamic bodies
-        Vector3f dtgrav = gravity;
+        Vector3f dtgrav = gravity * 100.0f * delta;
+
         foreach(b; bodies)
         if (b.type == BodyType.Dynamic)
         {
@@ -115,7 +116,7 @@ class PhysicsWorld
         if (bodies.length == 0)
             return;
         
-        enum iterations = 10;
+        enum iterations = 5;
         double delta2 = delta / iterations;
         
         for(uint iteration = 0; iteration < iterations; iteration++)
@@ -123,7 +124,6 @@ class PhysicsWorld
             // Integrate velocities and positions
             foreach(b; bodies)
             {
-                //b.integrate2(delta);
                 Integrate.improvedEuler(b, delta2);
                 b.updateGeomTransformation();
             }

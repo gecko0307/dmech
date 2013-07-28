@@ -37,7 +37,7 @@ import dlib.math.utils;
 import dmech.rigidbody;
 import dmech.contact;
 
-void solveContact(Contact c, uint iterations)
+void solveContact(ref Contact c, uint iterations)
 {
     RigidBody body1 = c.body1;
     RigidBody body2 = c.body2;
@@ -62,16 +62,15 @@ void solveContact(Contact c, uint iterations)
     Vector3f n2 = -c.normal;
     Vector3f w2 = -(c.normal.cross(r2));
     
-    float bounce = 0.4f; //c.restitution
-    float a = velocityProjection; // * (1 + bounce);
+    float a = velocityProjection;
 
     a *= iterations;
- 
+
     float b = n1.dot(n1) * body1.invMass
             + w1.dot(w1) * body1.invInertiaMoment
             + n2.dot(n2) * body2.invMass 
             + w2.dot(w2) * body2.invInertiaMoment;
-    
+ 
     float impulse = (-a / b);
     
     if (impulse < 0.05f)
@@ -80,17 +79,17 @@ void solveContact(Contact c, uint iterations)
     float normalImpulse = impulse;
 
     // TODO: don't hardcode these
-    float hardness = 0.9f;
     float staticFriction = 0.9f;
     float dynamicFriction = 0.9f;
 
     // Calculate tangent (friction) impulse
     Vector3f tangent = Vector3f(0.0f, 0.0f, 0.0f);
+    float frictionImpulse; 
     float tangentSpeed = 0.0f;
 
     if (velocityProjection != 0.0f)
     {
-        Vector3f VonN = relativeVelocity - dot(relativeVelocity, c.normal) * c.normal;
+        Vector3f VonN = relativeVelocity - velocityProjection * c.normal;
         tangentSpeed = VonN.length;
         if (tangentSpeed > 0)
             tangent = -VonN * (1.0f / tangentSpeed);
@@ -98,17 +97,17 @@ void solveContact(Contact c, uint iterations)
 
     if (tangentSpeed != 0.0f)
     {
-        float denom = body1.invMass + body2.invMass;
-        
-        denom += dot(cross(body1.invInertiaMoment * cross(r1, tangent), r1), tangent);
-        denom += dot(cross(body2.invInertiaMoment * cross(r2, tangent), r2), tangent);
+        float denom = 
+           body1.invMass + 
+           body2.invMass +
+           dot(cross(cross(r1, tangent) * body1.invInertiaMoment, r1), tangent) +
+           dot(cross(cross(r2, tangent) * body2.invInertiaMoment, r2), tangent);
         
         float desiredImpulse = tangentSpeed / denom;
         
         float impulseToReverse = desiredImpulse;
         float impulseFromNormalImpulse = impulse * staticFriction;
         
-        float frictionImpulse; 
         if (impulseToReverse < impulseFromNormalImpulse)
              frictionImpulse = impulseToReverse;
         else
@@ -118,7 +117,7 @@ void solveContact(Contact c, uint iterations)
     }
 
     // Apply impulse to bodies
-    Vector3f impulseVec = impulse * c.normal + tangent;
+    Vector3f impulseVec = c.normal * impulse + tangent;
     impulseVec /= iterations;
     
     if (body1.type == BodyType.Dynamic) 
@@ -127,7 +126,7 @@ void solveContact(Contact c, uint iterations)
         body2.applyImpulseAtPoint(-impulseVec, c.point);
 }
 
-void correctPositions(Contact c)
+void correctPositions(ref Contact c)
 {
     RigidBody body1 = c.body1;
     RigidBody body2 = c.body2;
