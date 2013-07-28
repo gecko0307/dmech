@@ -29,6 +29,7 @@ DEALINGS IN THE SOFTWARE.
 module dmech.constraint;
 
 import std.math;
+import std.algorithm;
 import dlib.math.vector;
 import dlib.math.matrix3x3;
 import dlib.math.quaternion;
@@ -41,6 +42,107 @@ abstract class Constraint
 
     void prepare(double delta);
     void step();
+}
+
+/*
+ * Keeps bodies at some fixed distance from each other.
+ */
+class DistanceConstraint: Constraint
+{
+    Vector3f r1, r2;
+    
+    float biasFactor = 0.1f;
+    float softness = 0.01f;
+    float distance;
+    
+    float effectiveMass = 0.0f;
+    float accumulatedImpulse = 0.0f;
+    float bias;
+    float softnessOverDt;
+    
+    Vector3f[4] jacobian;
+    
+    this(
+        RigidBody body1, 
+        RigidBody body2,
+        float dist)
+    {
+        this.body1 = body1;
+        this.body2 = body2;
+        
+        distance = dist;
+    }
+    
+    override void prepare(double delta)
+    {
+        r1 = r2 = Vector3f(0.0f, 0.0f, 0.0f);
+
+        Vector3f p1, p2, dp;
+        p1 = body1.position;
+        p2 = body2.position;
+        dp = p2 - p1;
+        
+        float deltaLength = dp.length - distance;
+
+        Vector3f n = (p2 - p1).normalized;
+            
+        jacobian[0] = -n;
+        jacobian[1] = -cross(r1, n);
+        jacobian[2] = n;
+        jacobian[3] = cross(r2, n);
+            
+        effectiveMass = 
+            body1.invMass + 
+            body2.invMass +
+            dot(jacobian[1] * body1.invInertiaMoment, jacobian[1]) +
+            dot(jacobian[3] * body2.invInertiaMoment, jacobian[3]);
+                
+        softnessOverDt = softness / delta;
+        effectiveMass += softnessOverDt;
+
+        if (effectiveMass != 0)
+            effectiveMass = 1.0f / effectiveMass;
+                
+        bias = deltaLength * biasFactor * (1.0f / delta);
+            
+        if (!body1.isStatic)
+        {
+            body1.linearVelocity += body1.invMass * accumulatedImpulse * jacobian[0];
+            body1.angularVelocity += accumulatedImpulse * jacobian[1] * body1.invInertiaMoment;
+        }
+
+        if (!body2.isStatic)
+        {
+            body2.linearVelocity += body2.invMass * accumulatedImpulse * jacobian[2];
+            body2.angularVelocity += accumulatedImpulse * jacobian[3] * body2.invInertiaMoment;
+        }
+    }
+    
+    override void step()
+    {           
+        float jv =
+            dot(body1.linearVelocity, jacobian[0]) +
+            dot(body1.angularVelocity, jacobian[1]) +
+            dot(body2.linearVelocity, jacobian[2]) +
+            dot(body2.angularVelocity, jacobian[3]);
+            
+        float softnessScalar = accumulatedImpulse * softnessOverDt;
+        float lambda = -effectiveMass * (jv + bias + softnessScalar);
+
+        accumulatedImpulse += lambda;
+        
+        if (!body1.isStatic)
+        {
+            body1.linearVelocity += body1.invMass * lambda * jacobian[0];
+            body1.angularVelocity += lambda * jacobian[1] * body1.invInertiaMoment;
+        }
+
+        if (!body2.isStatic)
+        {
+            body2.linearVelocity += body2.invMass * lambda * jacobian[2];
+            body2.angularVelocity += lambda * jacobian[3] * body2.invInertiaMoment;
+        }
+    }
 }
 
 /*
@@ -57,8 +159,8 @@ class BallConstraint: Constraint
    
     float accumulatedImpulse = 0.0f;
     
-    float biasFactor = 1.0f;
-    float softness = 0.0f;
+    float biasFactor = 0.1f;
+    float softness = 0.05f;
     
     float softnessOverDt;
     float effectiveMass;
@@ -260,6 +362,7 @@ class SliderConstraint: Constraint
  * orientation to each other.
  * Warning: unstable!
  */
+ /*
 class FixedAngleConstraint: Constraint
 {
     Vector3f accumulatedImpulse;
@@ -267,7 +370,7 @@ class FixedAngleConstraint: Constraint
     Matrix3x3f initialOrientation1, initialOrientation2;
     
     float biasFactor = 0.05f;
-    float softness = 0.0f;
+    float softness = 0.05f;
     
     float softnessOverDt;
     float effectiveMass;
@@ -337,5 +440,4 @@ class FixedAngleConstraint: Constraint
             body2.angularVelocity += -lambda * body2.invInertiaMoment;
     }
 }
-
-
+*/
