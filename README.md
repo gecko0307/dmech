@@ -5,10 +5,10 @@ Real-time 3D physics engine written in D language. Currently in early stage of d
 Features
 --------
 Already implemented:
-* Rigid body dynamics with iterative SI solver
+* Rigid body dynamics
+* Iterative SI contact solver with warmstarting
 * Basic geometry shapes (sphere, box, cylinder, cone, ellipsoid, triangle)
 * Support for any convex shapes defined with their support mapping
-* Arbitrary static trimeshes (optimization via BVH)
 * Constraints: distance, ball-socket, slider
 
 Planned in future:
