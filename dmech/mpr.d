@@ -60,7 +60,7 @@ void supportTransformed(Geometry s, Vector3f dir, out Vector3f result)
 
 /*
  * TODO:
- * - write c.fact here
+ * write c.fact here
  */
 
 bool MPRCollisionTest(
@@ -308,4 +308,3 @@ bool MPRCollisionTest(
     // Should never get here
     return false;
 }
-

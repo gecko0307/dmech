@@ -31,171 +31,161 @@ module dmech.rigidbody;
 import std.math;
 
 import dlib.math.vector;
-import dlib.math.quaternion;
-import dlib.math.matrix4x4;
 import dlib.math.matrix3x3;
+import dlib.math.matrix4x4;
+import dlib.math.quaternion;
+import dlib.math.utils;
 
 import dmech.geometry;
-import dmech.contact;
 
-enum BodyType
-{
-    Static,
-    Dynamic,
-    Kinematic
-}
+/*
+ * Rigid body class
+ */
 
 class RigidBody
 {
-    BodyType type = BodyType.Dynamic;
-    
     Vector3f position;
-    Vector3f linearVelocity;
-
     Quaternionf orientation;
+    
+    float damping;
+    float mass;
+    float invMass;
+    
+    float inertiaMoment;
+    float invInertiaMoment;
+    
+    Vector3f linearVelocity;
     Vector3f angularVelocity;
-
-    float mass = 1.0f;
-    float inertiaMoment = 1.0f;
     
-    float invMass = 1.0f;
-    float invInertiaMoment = 1.0f;
+    Vector3f pseudoLinearVelocity;
+    Vector3f pseudoAngularVelocity;
     
-    float dampingFactor = 0.999f;
-
+    Vector3f linearAcceleration;
+    Vector3f angularAcceleration;
+    
     Vector3f forceAccumulator;
     Vector3f torqueAccumulator;
 
     Geometry geometry;
-    
-    bool disableRotation = false;
-    bool disableGravity = false;
-    
-    Vector3f gravityDirection;
-    Contact lastGroundContact;
 
-    bool onGround = false;
+    bool dynamic;
+
+    uint id;
+
+    enum VelocityThreshold = 0.03f;
     
-    this(Vector3f pos = Vector3f(0.0f, 0.0f, 0.0f))
+    this()
     {
-        position = pos;
-        linearVelocity = Vector3f(0.0f, 0.0f, 0.0f);
-
+        position = Vector3f(0.0f, 0.0f, 0.0f);
         orientation = Quaternionf(0.0f, 0.0f, 0.0f, 1.0f);
+    
+        damping = 0.5f;
+    
+        mass = 1.0f;
+        invMass = 1.0f;
+    
+        inertiaMoment = 1.0f;
+        invInertiaMoment = 1.0f;
+    
+        linearVelocity = Vector3f(0.0f, 0.0f, 0.0f);
         angularVelocity = Vector3f(0.0f, 0.0f, 0.0f);
-
+    
+        pseudoLinearVelocity = Vector3f(0.0f, 0.0f, 0.0f);
+        pseudoAngularVelocity = Vector3f(0.0f, 0.0f, 0.0f);
+    
+        linearAcceleration = Vector3f(0.0f, 0.0f, 0.0f);
+        angularAcceleration = Vector3f(0.0f, 0.0f, 0.0f);
+    
         forceAccumulator = Vector3f(0.0f, 0.0f, 0.0f);
         torqueAccumulator = Vector3f(0.0f, 0.0f, 0.0f);
+
+        geometry = null;
+
+        dynamic = true;
+
+        id = 0;
     }
     
-    void setGeometry(Geometry geom)
+    void integrateForces(float dt)
     {
-        geometry = geom;
-        setMass(mass);
-    }
-    
-    void setMass(float m)
-    {
-        mass = m;  
-  
-        if (mass == float.max)
-            invMass = float.min;
-        else   
-            invMass = 1.0f / mass;
+        if (!dynamic)
+            return;
+            
+        linearAcceleration = forceAccumulator * invMass;
+        angularAcceleration = torqueAccumulator * invInertiaMoment;
         
-        if (geometry !is null)
-        {
-            if (mass == float.max)
-            {
-                inertiaMoment = float.max;
-                invInertiaMoment = float.min;
-            }
-            else
-            {
-                inertiaMoment = geometry.inertiaMoment(mass);
-                invInertiaMoment = 1.0f / inertiaMoment;
-            }
-        }
+        linearVelocity += linearAcceleration * dt;
+        angularVelocity += angularAcceleration * dt;
+    }
+    
+    void integrateVelocities(float dt)
+    {
+        if (!dynamic)
+            return;
+
+        linearVelocity *= clamp(1.0f - dt * damping, 0.0f, 1.0f);
+        angularVelocity *= clamp(1.0f - dt * damping, 0.0f, 1.0f);
+        
+        if (linearVelocity.length < VelocityThreshold)
+            linearVelocity = Vector3f(0.0f, 0.0f, 0.0f);
+        if (angularVelocity.length < VelocityThreshold)
+            angularVelocity = Vector3f(0.0f, 0.0f, 0.0f);
+        
+        position += linearVelocity * dt;
+        orientation += 0.5f * Quaternionf(angularVelocity, 0.0f) * orientation * dt;
+        orientation.normalize();
     }
 
-    void updateGeomTransformation()
-    {
-        if (geometry !is null)
-        {
-            if (disableRotation)
-                geometry.setTransformation(position, Quaternionf(0.0f, 0.0f, 0.0f, 1.0f));
-            else
-                geometry.setTransformation(position, orientation);
-        }
-    }
-    
     void resetForces()
     {
         forceAccumulator = Vector3f(0.0f, 0.0f, 0.0f);
         torqueAccumulator = Vector3f(0.0f, 0.0f, 0.0f);
     }
+
+    void setGeometry(Geometry geom)
+    {
+        geometry = geom;
+        updateGeometryTransformation();
+    }
+
+    void updateGeometryTransformation()
+    {
+        if (geometry !is null)
+            geometry.transformation = transformation();
+    }
     
     void applyForce(Vector3f force)
     {
+        if (!dynamic)
+            return;
+
         forceAccumulator += force;
     }
-    
+   
     void applyTorque(Vector3f torque)
     {
-        if (!disableRotation)
-            torqueAccumulator += torque;
+        if (!dynamic)
+            return;
+
+        torqueAccumulator += torque;
     }
     
-    void applyForceAtPoint(Vector3f force, Vector3f point)
+    void applyImpulse(Vector3f impulse, Vector3f point)
     {
-        forceAccumulator += force;
-        if (!disableRotation)
-            torqueAccumulator += cross(point - position, force);
-    }
-    
-    void applyForceAtLocalPoint(Vector3f force, Vector3f point)
-    {
-        forceAccumulator += force;
-        if (!disableRotation)
-            torqueAccumulator += cross(point, force);
-    }
-    
-    void applyImpulse(Vector3f impulse)
-    {
+        if (!dynamic)
+            return;
+
         linearVelocity += impulse * invMass;
+        Vector3f angularImpulse = cross(point - position, impulse);
+        angularVelocity += angularImpulse * invInertiaMoment;
     }
     
-    void applyAngularImpulse(Vector3f angularImpulse)
+    Matrix4x4f transformation()
     {
-        if (!disableRotation)
-            angularVelocity += angularImpulse * invInertiaMoment;
-    }
-    
-    void applyImpulseAtPoint(Vector3f impulse, Vector3f point)
-    {
-        linearVelocity += impulse * invMass;
-        
-        if (!disableRotation)
-        {
-            Vector3f angularImpulse = cross(point - position, impulse);
-            angularVelocity += angularImpulse * invInertiaMoment;
-        }
-    }
-    
-    void applyImpulseAtLocalPoint(Vector3f impulse, Vector3f point)
-    {
-        linearVelocity += impulse * invMass;
-        
-        if (!disableRotation)
-        {
-            Vector3f angularImpulse = cross(point, impulse);
-            angularVelocity += angularImpulse * invInertiaMoment;
-        }
-    }
-    
-    bool isStatic()
-    {
-        return (type == BodyType.Static);
+        Matrix4x4f t;
+        t = translationMatrix(position);
+        t *= orientation.toMatrix();
+        return t;
     }
 }
 

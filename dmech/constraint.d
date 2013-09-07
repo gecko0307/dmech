@@ -30,9 +30,10 @@ module dmech.constraint;
 
 import std.math;
 import std.algorithm;
+
 import dlib.math.vector;
-import dlib.math.matrix3x3;
 import dlib.math.quaternion;
+
 import dmech.rigidbody;
 
 abstract class Constraint
@@ -40,7 +41,7 @@ abstract class Constraint
     RigidBody body1;
     RigidBody body2;
 
-    void prepare(double delta);
+    void prepare(float delta);
     void step();
 }
 
@@ -73,7 +74,7 @@ class DistanceConstraint: Constraint
         distance = dist;
     }
     
-    override void prepare(double delta)
+    override void prepare(float delta)
     {
         r1 = r2 = Vector3f(0.0f, 0.0f, 0.0f);
 
@@ -105,13 +106,13 @@ class DistanceConstraint: Constraint
                 
         bias = deltaLength * biasFactor * (1.0f / delta);
             
-        if (!body1.isStatic)
+        if (body1.dynamic)
         {
             body1.linearVelocity += body1.invMass * accumulatedImpulse * jacobian[0];
             body1.angularVelocity += accumulatedImpulse * jacobian[1] * body1.invInertiaMoment;
         }
 
-        if (!body2.isStatic)
+        if (body2.dynamic)
         {
             body2.linearVelocity += body2.invMass * accumulatedImpulse * jacobian[2];
             body2.angularVelocity += accumulatedImpulse * jacobian[3] * body2.invInertiaMoment;
@@ -131,13 +132,13 @@ class DistanceConstraint: Constraint
 
         accumulatedImpulse += lambda;
         
-        if (!body1.isStatic)
+        if (body1.dynamic)
         {
             body1.linearVelocity += body1.invMass * lambda * jacobian[0];
             body1.angularVelocity += lambda * jacobian[1] * body1.invInertiaMoment;
         }
 
-        if (!body2.isStatic)
+        if (body2.dynamic)
         {
             body2.linearVelocity += body2.invMass * lambda * jacobian[2];
             body2.angularVelocity += lambda * jacobian[3] * body2.invInertiaMoment;
@@ -175,7 +176,7 @@ class BallConstraint: Constraint
         localAnchor2 = anchor2;
     }
     
-    override void prepare(double delta)
+    override void prepare(float delta)
     {
         Vector3f r1 = body1.orientation.rotate(localAnchor1);
         Vector3f r2 = body2.orientation.rotate(localAnchor2);
@@ -206,13 +207,13 @@ class BallConstraint: Constraint
 
         bias = deltaLength * biasFactor * (1.0f / delta);
 
-        if (!body1.isStatic)
+        if (body1.dynamic)
         {
             body1.linearVelocity += body1.invMass * accumulatedImpulse * jacobian[0];
             body1.angularVelocity += accumulatedImpulse * jacobian[1] * body1.invInertiaMoment;
         }
 
-        if (!body2.isStatic)
+        if (body2.dynamic)
         {
             body2.linearVelocity += body2.invMass * accumulatedImpulse * jacobian[2];
             body2.angularVelocity += accumulatedImpulse * jacobian[3] * body2.invInertiaMoment;
@@ -232,13 +233,13 @@ class BallConstraint: Constraint
 
         accumulatedImpulse += lambda;
 
-        if (!body1.isStatic)
+        if (body1.dynamic)
         {
             body1.linearVelocity += body1.invMass * lambda * jacobian[0];
             body1.angularVelocity += lambda * jacobian[1] * body1.invInertiaMoment;
         }
 
-        if (!body2.isStatic)
+        if (body2.dynamic)
         {
             body2.linearVelocity += body2.invMass * lambda * jacobian[2];
             body2.angularVelocity += lambda * jacobian[3] * body2.invInertiaMoment;
@@ -280,7 +281,7 @@ class SliderConstraint: Constraint
                       pointBody2 + body2.position).normalized;
     }
 
-    override void prepare(double delta)
+    override void prepare(float delta)
     {
         Vector3f r1 = body1.orientation.rotate(localAnchor1);
         Vector3f r2 = body2.orientation.rotate(localAnchor2);
@@ -317,13 +318,13 @@ class SliderConstraint: Constraint
 
         bias = -cross(l, (p2 - p1)).length * biasFactor * (1.0f / delta);
 
-        if (!body1.isStatic)
+        if (body1.dynamic)
         {
             body1.linearVelocity += body1.invMass * accumulatedImpulse * jacobian[0];
             body1.angularVelocity += accumulatedImpulse * jacobian[1] * body1.invInertiaMoment;
         }
 
-        if (!body2.isStatic)
+        if (body2.dynamic)
         {
             body2.linearVelocity += body2.invMass * accumulatedImpulse * jacobian[2];
             body2.angularVelocity += accumulatedImpulse * jacobian[3] * body2.invInertiaMoment;
@@ -343,101 +344,16 @@ class SliderConstraint: Constraint
 
         accumulatedImpulse += lambda;
 
-        if (!body1.isStatic)
+        if (body1.dynamic)
         {
             body1.linearVelocity += body1.invMass * lambda * jacobian[0];
             body1.angularVelocity += lambda * jacobian[1] * body1.invInertiaMoment;
         }
 
-        if (!body2.isStatic)
+        if (body2.dynamic)
         {
             body2.linearVelocity += body2.invMass * lambda * jacobian[2];
             body2.angularVelocity += lambda * jacobian[3] * body2.invInertiaMoment;
         }
     }
 }
-
-/*
- * The AngleConstraint constraints two bodies to always have the same relative
- * orientation to each other.
- * Warning: unstable!
- */
- /*
-class FixedAngleConstraint: Constraint
-{
-    Vector3f accumulatedImpulse;
-
-    Matrix3x3f initialOrientation1, initialOrientation2;
-    
-    float biasFactor = 0.05f;
-    float softness = 0.05f;
-    
-    float softnessOverDt;
-    float effectiveMass;
-    Vector3f bias;
-
-    this(RigidBody body1, RigidBody body2)
-    {
-        this.body1 = body1;
-        this.body2 = body2;
-
-        initialOrientation1 = body1.orientation.toMatrix3x3;
-        initialOrientation2 = body2.orientation.toMatrix3x3;
-
-        accumulatedImpulse = Vector3f(0.0f, 0.0f, 0.0f);
-    }
-
-    override void prepare(double delta)
-    {
-        effectiveMass = body1.invInertiaMoment + body2.invInertiaMoment;
-
-        softnessOverDt = softness / delta;
-        effectiveMass += softnessOverDt;
-
-        if (effectiveMass != 0)
-            effectiveMass = 1.0f / effectiveMass;
-
-        Matrix3x3f orientationDifference;
-        orientationDifference = initialOrientation1 * initialOrientation2;
-        orientationDifference = orientationDifference.transposed();
-
-        Matrix3x3f q = orientationDifference * body2.orientation.toMatrix3x3.inverse * body1.orientation.toMatrix3x3;
-
-        float x = q.m32 - q.m23;
-        float y = q.m13 - q.m31;
-        float z = q.m21 - q.m12;
-
-        float r = sqrt(x * x + y * y + z * z);
-        float t = q.m11 + q.m22 + q.m33;
-
-        float angle = atan2(r, t - 1.0f);
-        Vector3f axis = Vector3f(x, y, z) * angle;
-        if (r != 0.0f)
-            axis = axis * (1.0f / r);
-
-        bias = axis * biasFactor * (-1.0f / delta);
-
-        if (!body1.isStatic) 
-            body1.angularVelocity += accumulatedImpulse * body1.invInertiaMoment;
-
-        if (!body2.isStatic)
-            body2.angularVelocity += -accumulatedImpulse * body2.invInertiaMoment;
-    }
-
-    override void step()
-    {
-        Vector3f jv = body1.angularVelocity - body2.angularVelocity;
-        Vector3f softnessVector = accumulatedImpulse * softnessOverDt;
-
-        Vector3f lambda = -(jv + bias + softnessVector) * effectiveMass;
-
-        accumulatedImpulse += lambda;
-
-        if (!body1.isStatic)
-            body1.angularVelocity += lambda * body1.invInertiaMoment;
-
-        if (!body2.isStatic)
-            body2.angularVelocity += -lambda * body2.invInertiaMoment;
-    }
-}
-*/
