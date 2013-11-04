@@ -40,15 +40,15 @@ struct Contact
     bool fact;
 
     Vector3f point;
-    //Vector3f relPoint1;
-    //Vector3f relPoint2;
+    Vector3f relPoint1;
+    Vector3f relPoint2;
 
     Vector3f normal;
     float penetration = 0.0f;
     
     float accumulatedImpulse = 0.0f;
     float accumulatedfImpulse = 0.0f;
-
-    //Vector3f velocity;
+    
+    float initialVelocityProjection;
 }
 

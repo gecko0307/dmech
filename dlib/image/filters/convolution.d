@@ -75,7 +75,11 @@ body
             csum.a = alpha;
 
         res[x,y] = csum.convert(img.bitDepth);
+        
+        img.updateProgress();
     }
+    
+    img.resetProgress();
 
     return res;
 }

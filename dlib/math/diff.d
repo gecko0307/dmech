@@ -26,25 +26,22 @@ ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
 DEALINGS IN THE SOFTWARE.
 */
 
-module dmech.collision;
+module dlib.math.diff;
 
-import dmech.geometry;
-import dmech.rigidbody;
-import dmech.contact;
-import dmech.mpr;
+import dlib.math.dual;
+import dlib.core.compound;
 
-// TODO: sphere/sphere collision is a simple case,
-// use a special routine for it, instead of MPR.
-bool checkCollision(RigidBody body1, RigidBody body2, ref Contact c)
+/*
+ * Differentiate a function of a single argument:
+ * auto r = diff!f(x);
+ *
+ * Result is the following:
+ * r[0] = f(x)
+ * r[1] = f'(x)
+ */
+auto diff(alias F, T)(T x)
 {
-    c.body1 = body1;
-    c.body2 = body2;
-
-    bool collided = MPRCollisionTest(body1.geometry, body2.geometry, c);
-
-    if (collided)
-        c.fact = true;
-
-    return collided;
+    auto eval = F(Dual!(T)(x, 1.0));
+    return compound(eval.re, eval.du);
 }
 

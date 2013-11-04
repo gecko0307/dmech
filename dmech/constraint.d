@@ -41,7 +41,7 @@ abstract class Constraint
     RigidBody body1;
     RigidBody body2;
 
-    void prepare(float delta);
+    void prepare(double delta);
     void step();
 }
 
@@ -74,7 +74,7 @@ class DistanceConstraint: Constraint
         distance = dist;
     }
     
-    override void prepare(float delta)
+    override void prepare(double delta)
     {
         r1 = r2 = Vector3f(0.0f, 0.0f, 0.0f);
 
@@ -108,14 +108,14 @@ class DistanceConstraint: Constraint
             
         if (body1.dynamic)
         {
-            body1.linearVelocity += body1.invMass * accumulatedImpulse * jacobian[0];
-            body1.angularVelocity += accumulatedImpulse * jacobian[1] * body1.invInertiaMoment;
+            body1.linearVelocity += jacobian[0] * accumulatedImpulse * body1.invMass;
+            body1.angularVelocity += jacobian[1] * accumulatedImpulse * body1.invInertiaMoment;
         }
 
         if (body2.dynamic)
         {
-            body2.linearVelocity += body2.invMass * accumulatedImpulse * jacobian[2];
-            body2.angularVelocity += accumulatedImpulse * jacobian[3] * body2.invInertiaMoment;
+            body2.linearVelocity += jacobian[2] * accumulatedImpulse * body2.invMass;
+            body2.angularVelocity += jacobian[3] * accumulatedImpulse * body2.invInertiaMoment;
         }
     }
     
@@ -134,14 +134,14 @@ class DistanceConstraint: Constraint
         
         if (body1.dynamic)
         {
-            body1.linearVelocity += body1.invMass * lambda * jacobian[0];
-            body1.angularVelocity += lambda * jacobian[1] * body1.invInertiaMoment;
+            body1.linearVelocity += jacobian[0] * lambda * body1.invMass;
+            body1.angularVelocity += jacobian[1] * lambda * body1.invInertiaMoment;
         }
 
         if (body2.dynamic)
         {
-            body2.linearVelocity += body2.invMass * lambda * jacobian[2];
-            body2.angularVelocity += lambda * jacobian[3] * body2.invInertiaMoment;
+            body2.linearVelocity += jacobian[2] * lambda * body2.invMass;
+            body2.angularVelocity += jacobian[3] * lambda * body2.invInertiaMoment;
         }
     }
 }
@@ -176,7 +176,7 @@ class BallConstraint: Constraint
         localAnchor2 = anchor2;
     }
     
-    override void prepare(float delta)
+    override void prepare(double delta)
     {
         Vector3f r1 = body1.orientation.rotate(localAnchor1);
         Vector3f r2 = body2.orientation.rotate(localAnchor2);
@@ -209,14 +209,14 @@ class BallConstraint: Constraint
 
         if (body1.dynamic)
         {
-            body1.linearVelocity += body1.invMass * accumulatedImpulse * jacobian[0];
-            body1.angularVelocity += accumulatedImpulse * jacobian[1] * body1.invInertiaMoment;
+            body1.linearVelocity += jacobian[0] * body1.invMass * accumulatedImpulse;
+            body1.angularVelocity += jacobian[1] * body1.invInertiaMoment * accumulatedImpulse;
         }
 
         if (body2.dynamic)
         {
-            body2.linearVelocity += body2.invMass * accumulatedImpulse * jacobian[2];
-            body2.angularVelocity += accumulatedImpulse * jacobian[3] * body2.invInertiaMoment;
+            body2.linearVelocity += jacobian[2] * body2.invMass * accumulatedImpulse;
+            body2.angularVelocity += jacobian[3] * body2.invInertiaMoment * accumulatedImpulse;
         }
     }
     
@@ -235,14 +235,14 @@ class BallConstraint: Constraint
 
         if (body1.dynamic)
         {
-            body1.linearVelocity += body1.invMass * lambda * jacobian[0];
-            body1.angularVelocity += lambda * jacobian[1] * body1.invInertiaMoment;
+            body1.linearVelocity += jacobian[0] * body1.invMass * lambda;
+            body1.angularVelocity += jacobian[1] * body1.invInertiaMoment * lambda;
         }
 
         if (body2.dynamic)
         {
-            body2.linearVelocity += body2.invMass * lambda * jacobian[2];
-            body2.angularVelocity += lambda * jacobian[3] * body2.invInertiaMoment;
+            body2.linearVelocity += jacobian[2] * body2.invMass * lambda;
+            body2.angularVelocity += jacobian[3] * body2.invInertiaMoment * lambda;
         }
     }
 }
@@ -251,6 +251,7 @@ class BallConstraint: Constraint
  * Constraints a point on a body to be fixed on a line
  * which is fixed on another body.
  */
+/*
 class SliderConstraint: Constraint
 {
     Vector3f lineNormal;
@@ -281,7 +282,7 @@ class SliderConstraint: Constraint
                       pointBody2 + body2.position).normalized;
     }
 
-    override void prepare(float delta)
+    override void prepare(double delta)
     {
         Vector3f r1 = body1.orientation.rotate(localAnchor1);
         Vector3f r2 = body2.orientation.rotate(localAnchor2);
@@ -357,3 +358,4 @@ class SliderConstraint: Constraint
         }
     }
 }
+*/

@@ -43,6 +43,7 @@ import dmech.manifold;
 import dmech.hashtable;
 import dmech.solver;
 import dmech.constraint;
+import dmech.bvh;
 import dmech.mpr;
 
 class PhysicsWorld
@@ -82,9 +83,9 @@ class PhysicsWorld
     {
         auto b = new RigidBody();
         b.position = pos;
-        b.mass = float.max;
+        b.mass = float.infinity;
         b.invMass = 0.0f;
-        b.inertiaMoment = float.max;
+        b.inertiaMoment = float.infinity;
         b.invInertiaMoment = 0.0f;
         b.dynamic = false;
         b.id = maxBodyId;
@@ -106,12 +107,12 @@ class PhysicsWorld
 
         foreach(b; bodies)
         {
-            b.applyForce(b.mass * gravity);
+            b.applyForce(gravity * b.mass);
             b.integrateForces(dt);
             b.resetForces();
         }
 
-        findCollisions();
+        findCollisions(dt);
         solveCollisions(dt);
         solveConstraints(dt);
 
@@ -122,7 +123,7 @@ class PhysicsWorld
         }
     }
 
-    void findCollisions()
+    void findCollisions(double dt)
     {
         for (int i = 0; i < bodies.length - 1; i++)   
         for (int j = i + 1; j < bodies.length; j++)
@@ -138,42 +139,33 @@ class PhysicsWorld
                     manifolds.set(bodies[i].id, bodies[j].id, m1);
                 }
                 else
+                {
                     m.computeContacts(c);
+                }
             }
             else
+            {
                 manifolds.remove(bodies[i].id, bodies[j].id);
+            }
         }
     }
 
     void solveCollisions(float dt)
     {
-        foreach(ref entry; manifolds.table)
+        foreach(ref m; manifolds)
+        foreach(i; 0..m.numContacts)
         {
-            if (entry.valid)
-            {
-                auto m = &entry.value;
-                foreach(i; 0..m.numContacts)
-                {
-                    auto c = &m.contacts[i];
-                    prepareContact(c);
-                }
-            }
+            auto c = &m.contacts[i];
+            prepareContact(c);
         }
 
-        foreach(iteration; 0..60)
+        foreach(iteration; 0..10)
         {
-            foreach(ref entry; manifolds.table)
+            foreach(ref m; manifolds)
+            foreach(i; 0..m.numContacts)
             {
-                if (entry.valid)
-                {
-                    auto m = &entry.value;
-                    
-                    foreach(i; 0..m.numContacts)
-                    {
-                        auto c = &m.contacts[i];
-                        solveContact(c, dt);
-                    }
-                }
+                auto c = &m.contacts[i];
+                solveContact(c, dt);
             }
         }
     }
@@ -189,4 +181,3 @@ class PhysicsWorld
         }
     }
 }
-

@@ -48,8 +48,7 @@ bool pointInPolygon(Vector2f[] vert, uint len, Vector2f point)
     for (i = 0, j = len - 1; i < len; j = i++)
     {
         if ( ((vert[i].y > point.y) != (vert[j].y > point.y)) &&
-             (point.x < (vert[j].x - vert[i].x) * (point.y - vert[i].y) / 
-                        (vert[j].y - vert[i].y) + vert[i].x) )
+             (point.x < (vert[j].x - vert[i].x) * (point.y - vert[i].y) / (vert[j].y - vert[i].y) + vert[i].x) )
             c = !c;
     }
     return c;
@@ -80,24 +79,24 @@ bool segmentIsec(
 
     float a1 = -dir1.y;
     float b1 = +dir1.x;
-    float d1 = -(a1 * start1.x + b1 * start1.y);
+    float d1 = -(a1*start1.x + b1*start1.y);
 
     float a2 = -dir2.y;
     float b2 = +dir2.x;
-    float d2 = -(a2 * start2.x + b2 * start2.y);
+    float d2 = -(a2*start2.x + b2*start2.y);
 
-    float seg1_line2_start = a2 * start1.x + b2 * start1.y + d2;
-    float seg1_line2_end = a2 * end1.x + b2 * end1.y + d2;
+    float seg1_line2_start = a2*start1.x + b2*start1.y + d2;
+    float seg1_line2_end = a2*end1.x + b2*end1.y + d2;
 
-    float seg2_line1_start = a1 * start2.x + b1 * start2.y + d1;
-    float seg2_line1_end = a1 * end2.x + b1 * end2.y + d1;
+    float seg2_line1_start = a1*start2.x + b1*start2.y + d1;
+    float seg2_line1_end = a1*end2.x + b1*end2.y + d1;
 
     if (seg1_line2_start * seg1_line2_end >= 0 || 
         seg2_line1_start * seg2_line1_end >= 0) 
         return false;
 
     float u = seg1_line2_start / (seg1_line2_start - seg1_line2_end);
-    out_intersection = start1 + u * dir1;
+    out_intersection = start1 + dir1 * u;
 
     return true;
 }
@@ -109,6 +108,7 @@ bool clip(
     out Vector2f[8] outPts, 
     out uint numOutPts) 
 {
+/*
     if (f1.numVertices == 1)
     {
         outPts[0] = f1.vertices[0];
@@ -119,6 +119,7 @@ bool clip(
         outPts[0] = f2.vertices[0];
         numOutPts = 1;
     }
+*/
 
     // Check if one feature fully encloses another
     bool[4] r1;
@@ -180,8 +181,11 @@ bool clip(
         Vector2f ip;
         if (segmentIsec(a, b, c, d, ip))
         {
-            outPts[numOutPts] = ip;
-            numOutPts++;
+            if (numOutPts < 8)
+            {
+                outPts[numOutPts] = ip;
+                numOutPts++;
+            }
         }
     }
 

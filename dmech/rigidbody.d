@@ -31,15 +31,15 @@ module dmech.rigidbody;
 import std.math;
 
 import dlib.math.vector;
-import dlib.math.matrix3x3;
-import dlib.math.matrix4x4;
+import dlib.math.matrix;
+import dlib.math.affine;
 import dlib.math.quaternion;
 import dlib.math.utils;
 
 import dmech.geometry;
 
 /*
- * Rigid body class
+ * Absolute rigid body class
  */
 
 class RigidBody
@@ -66,13 +66,16 @@ class RigidBody
     Vector3f forceAccumulator;
     Vector3f torqueAccumulator;
 
+    float bounce;
+    float friction;
+
     Geometry geometry;
 
     bool dynamic;
 
     uint id;
 
-    enum VelocityThreshold = 0.03f;
+    enum VelocityThreshold = 0.04f;
     
     this()
     {
@@ -98,6 +101,9 @@ class RigidBody
     
         forceAccumulator = Vector3f(0.0f, 0.0f, 0.0f);
         torqueAccumulator = Vector3f(0.0f, 0.0f, 0.0f);
+
+        friction = 0.9f;
+        bounce = 0.5f;
 
         geometry = null;
 
@@ -184,8 +190,7 @@ class RigidBody
     {
         Matrix4x4f t;
         t = translationMatrix(position);
-        t *= orientation.toMatrix();
+        t *= orientation.toMatrix4x4();
         return t;
     }
 }
-

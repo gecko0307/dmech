@@ -29,7 +29,8 @@ DEALINGS IN THE SOFTWARE.
 module dmech.mpr;
 
 import dlib.math.vector;
-import dlib.math.matrix4x4;
+import dlib.math.matrix;
+import dlib.math.affine;
 import dlib.math.utils;
 
 import dmech.geometry;
@@ -43,24 +44,24 @@ void supportTransformed(Geometry s, Vector3f dir, out Vector3f result)
 {
     Matrix4x4f m = s.transformation;
 
-    result.x = ((dir.x * m.m11) + (dir.y * m.m12)) + (dir.z * m.m13);
-    result.y = ((dir.x * m.m21) + (dir.y * m.m22)) + (dir.z * m.m23);
-    result.z = ((dir.x * m.m31) + (dir.y * m.m32)) + (dir.z * m.m33);
+    result.x = ((dir.x * m.a11) + (dir.y * m.a12)) + (dir.z * m.a13);
+    result.y = ((dir.x * m.a21) + (dir.y * m.a22)) + (dir.z * m.a23);
+    result.z = ((dir.x * m.a31) + (dir.y * m.a32)) + (dir.z * m.a33);
 
     result = s.supportPoint(result);
 
-    float x = ((result.x * m.m11) + (result.y * m.m21)) + (result.z * m.m31);
-    float y = ((result.x * m.m12) + (result.y * m.m22)) + (result.z * m.m32);
-    float z = ((result.x * m.m13) + (result.y * m.m23)) + (result.z * m.m33);
+    float x = ((result.x * m.a11) + (result.y * m.a21)) + (result.z * m.a31);
+    float y = ((result.x * m.a12) + (result.y * m.a22)) + (result.z * m.a32);
+    float z = ((result.x * m.a13) + (result.y * m.a23)) + (result.z * m.a33);
 
-    result.x = m.tx + x;
-    result.y = m.ty + y;
-    result.z = m.tz + z;
+    result.x = m.a41 + x;
+    result.y = m.a42 + y;
+    result.z = m.a43 + z;
 }
 
 /*
  * TODO:
- * write c.fact here
+ * - write c.fact here
  */
 
 bool MPRCollisionTest(

@@ -78,6 +78,24 @@ class HashTable(T)
 
         table[hash].valid = false;
     }
+
+    int opApply(int delegate(ref T) func)
+    {
+        int result = 0;
+
+        foreach(ref entry; table)
+        {
+            if (entry.valid)
+            {
+                //auto val = &entry.value;
+                result = func(entry.value);
+                if (result)
+                    break;
+            }
+        }
+
+        return result;
+    }
 }
 
 ulong szudzikPair(uint a, uint b)

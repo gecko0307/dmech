@@ -26,25 +26,33 @@ ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
 DEALINGS IN THE SOFTWARE.
 */
 
-module dmech.collision;
+module dlib.math.linear;
 
-import dmech.geometry;
-import dmech.rigidbody;
-import dmech.contact;
-import dmech.mpr;
+import dlib.math.matrix;
+import dlib.math.vector;
 
-// TODO: sphere/sphere collision is a simple case,
-// use a special routine for it, instead of MPR.
-bool checkCollision(RigidBody body1, RigidBody body2, ref Contact c)
+void solveGS(T, size_t N)(
+      Matrix!(T,N) a, 
+  ref Vector!(T,N) x, 
+      Vector!(T,N) b, 
+      uint iterations = 10)
 {
-    c.body1 = body1;
-    c.body2 = body2;
+    double delta;
+    
+    for (int k = 0; k < iterations; ++k)
+    {
+        for (int i = 0; i < N; ++i)
+        {
+            delta = 0.0;
+            
+            for (int j = 0; j < i; ++j)
+                delta += a[j, i] * x[j];
 
-    bool collided = MPRCollisionTest(body1.geometry, body2.geometry, c);
-
-    if (collided)
-        c.fact = true;
-
-    return collided;
+            for (int j = i + 1; j < N; ++j)
+                delta += a[j, i] * x[j];
+                
+            delta = (b[i] - delta) / a[i, i];
+            x[i] = delta;
+        }
+    }
 }
-

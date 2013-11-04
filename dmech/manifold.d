@@ -29,11 +29,9 @@ DEALINGS IN THE SOFTWARE.
 module dmech.manifold;
 
 import std.math;
-import std.stdio;
-import core.exception;
 
 import dlib.math.vector;
-import dlib.math.matrix4x4;
+import dlib.math.matrix;
 import dlib.math.quaternion;
 import dlib.math.utils;
 import dlib.geometry.plane;
@@ -45,7 +43,25 @@ import dmech.geometry;
 import dmech.mpr;
 import dmech.clipping;
 
-// TODO: move projectPoint and unprojectPoint to dlib.geometry.plane
+// TODO: move projectPointOnPlane and planeBasis to dlib.geometry.plane
+/*
+Vector3f projectPointOnPlane(Vector3f point, Vector3f planeOrigin, Vector3f planeNormal)
+{
+    Vector3f v = point - planeOrigin;
+    float dist = dot(v, planeNormal);
+    Vector3f projectedPoint = point - dist * planeNormal;
+    return projectedPoint;
+}
+
+// Z direction in this basis is plane normal
+Matrix4x4f planeBasis(Vector3f planeOrigin, Vector3f planeNormal)
+{
+    Matrix4x4f basis = directionToMatrix(planeNormal);
+    basis.translation = planeOrigin;
+    return basis;
+}
+*/
+
 Vector2f projectPoint(
     Vector3f point, 
     Vector3f origin, 
@@ -77,9 +93,18 @@ struct ContactManifold
 {
     Contact[8] contacts;
     uint numContacts = 0;
+    Contact mainContact;
+    Feature f1;
+    Feature f2;
+    Vector2f[8] pts;
 
+    // Find all contact points at once
     void computeContacts(Contact c)
     {
+        mainContact = c;
+
+        uint numPts = 0;
+
         // If colliding with a sphere, there's only one contact
         if (c.body1.geometry.type == GeomType.Sphere ||
             c.body2.geometry.type == GeomType.Sphere)
@@ -108,13 +133,12 @@ struct ContactManifold
         
         Vector3f right = n0;
         Vector3f up = n1;
-
+        
+        // Calculate basis for contact plane
         Plane contactPlane;
         contactPlane.fromPointAndNormal(c.point, c.normal);
 
         // Scan contact features by rotating axis
-        Feature f1, f2;
-        
         f1.numVertices = 0;
         f2.numVertices = 0;
         
@@ -124,13 +148,13 @@ struct ContactManifold
         if (c.body1.geometry.type == GeomType.Cylinder ||
             c.body2.geometry.type == GeomType.Cylinder)
         {
-            eps = 0.05f;
+            eps = 0.01f;
         }
 
         if (c.body1.geometry.type == GeomType.Cone ||
             c.body2.geometry.type == GeomType.Cone)
         {
-            eps = 0.05f;
+            eps = 0.01f;
         }
 
         float startAng = PI / 4;
@@ -142,7 +166,7 @@ struct ContactManifold
         {
             numAxes1 = 3;
             startAng = 0;
-            stepAng = radtodeg(120.0f);
+            stepAng = radtodeg(120.0f); // 2*PI/3 = 120 degrees
         }
 
         for(uint i = 0; i < numAxes1; i++)
@@ -154,6 +178,7 @@ struct ContactManifold
             Vector3f p;
 
             supportTransformed(c.body1.geometry, -axis, p);
+            
             if (contactPlane.distance(p) < 0.0f)
             {
                 Vector2f planePoint = projectPoint(p, c.point, right, up);
@@ -168,9 +193,9 @@ struct ContactManifold
         {
             numAxes2 = 3;
             startAng = 0;
-            stepAng = radtodeg(120.0f);
+            stepAng = radtodeg(120.0f); // 2*PI/3 = 120 degrees
         }
-
+        
         for(uint i = 0; i < numAxes2; i++)
         {
             float ang = startAng + stepAng * i;
@@ -189,24 +214,70 @@ struct ContactManifold
         }
 
         // Clip features in 2D space: find their overlapping polygon
-        Vector2f[8] clippedPoints;
-        uint numClippedPoints;
-        clip(f1, f2, clippedPoints, numClippedPoints);
+        clip(f1, f2, pts, numPts);
 
-        // Transform the resulting points back into 3D space
-        // TODO: pesistent contacts
-        numContacts = 0;
-        for(uint i = 0; i < numClippedPoints; i++)
+        // Transform the resulting points back into 3D space       
+        Contact[8] newManifold;
+        for(uint i = 0; i < numPts; i++)
         {
             Contact newc;
             newc.fact = true;
             newc.body1 = c.body1;
             newc.body2 = c.body2;
-            newc.point = unprojectPoint(clippedPoints[i], c.point, right, up);
+            newc.point = unprojectPoint(pts[i], c.point, right, up);
             newc.normal = c.normal;
             newc.penetration = c.penetration;
-            contacts[i] = newc;
+            newManifold[i] = newc;
+        }
+        
+        // Update the existing manifold
+        updateManifold(newManifold, numPts);
+    }
+    
+    void updateManifold(ref Contact[8] newManifold, uint numNewContacts)
+    {
+        numContacts = 0;
+    
+        Contact[8] res;
+        bool[8] used;
+        uint resNum = 0;
+        
+        foreach(i; 0..numContacts)
+        {        
+            Vector3f p1 = contacts[i].point;
+            
+            foreach(j; 0..numNewContacts)
+            {
+                Vector3f p2 = newManifold[j].point;
+                
+                if (distance(p1, p2) < 0.1f)
+                {
+                    res[resNum] = contacts[i];
+                    res[resNum].body1 = newManifold[j].body1;
+                    res[resNum].body2 = newManifold[j].body2;
+                    res[resNum].point = p2; //(p1 + p2) * 0.5f;
+                    res[resNum].normal = newManifold[j].normal;
+                    res[resNum].penetration = newManifold[j].penetration;
+                    resNum++;
+                    used[j] = true;
+                }
+            }
+        }
+        
+        foreach(i; 0..numNewContacts)
+        {
+            if (!used[i])
+            {
+                res[resNum] = newManifold[i];
+                resNum++;
+            }
+        }
+        
+        foreach(i; 0..resNum)
+        {
+            contacts[i] = res[i];
             numContacts++;
         }
     }
 }
+

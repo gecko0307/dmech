@@ -5,7 +5,7 @@ To use dmech in your application, import the following modules:
     import dmech.world;
 
     import dlib.math.vector;
-    import dlib.math.matrix4x4;
+    import dlib.math.matrix;
 
 Create a world:
 

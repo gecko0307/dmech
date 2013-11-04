@@ -26,16 +26,18 @@ ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
 DEALINGS IN THE SOFTWARE.
 */
 
-module dmech.geometry;
+module geometry;
 
 import std.math;
 
 import dlib.math.vector;
-import dlib.math.matrix3x3;
-import dlib.math.matrix4x4;
+import dlib.math.matrix;
+import dlib.math.affine;
 import dlib.math.utils;
 import dlib.geometry.aabb;
 import dlib.geometry.sphere;
+
+import dmech.bvh;
 
 enum GeomType
 {
@@ -55,7 +57,7 @@ abstract class Geometry
 
     this()
     {
-        transformation = identityMatrix4x4f();
+        transformation = Matrix4x4f.identity;
     }
     
     @property Vector3f position()
@@ -224,4 +226,81 @@ class GeomEllipsoid: Geometry
     }
 
     // TODO: boundingSphere
+}
+
+class GeomTriangle: Geometry
+{
+    Vector3f[3] v;
+    
+    this(Vector3f a, Vector3f b, Vector3f c)
+    {
+        super();
+        type = GeomType.Triangle;
+        v[0] = a;
+        v[1] = b;
+        v[2] = c;
+    }
+/*
+    override Vector3f supportPoint(Vector3f dir)
+    {
+        float dota = dir.dot(v[0]);
+        float dotb = dir.dot(v[1]);
+        float dotc = dir.dot(v[2]);
+    
+        if (dota > dotb)
+        {
+            if (dotc > dota)
+                return v[2];
+            else
+                return v[0];
+        }
+        else
+        {
+            if (dotc > dotb)
+                return v[2];
+            else
+                return v[1];
+        }
+    }
+*/
+
+    override Vector3f supportPoint(Vector3f dir)
+    {
+        float maxDist = float.min;
+        int maxIndex = -1;
+
+        for (int i = 0; i < 3; ++i)
+        {
+            float result = v[i].dot(dir);
+            if (result > maxDist)
+            {
+                maxIndex = i;
+                maxDist = result;
+            }
+        }
+           
+        // Slap an epsilon value against the normal of the triangle plane as "volume"
+        // So that MPR may terminate before it tries to construct the tetrahedron
+        Vector3f point = dir.normalized * EPSILON; //sphere.GetSupportPoint(normal);
+
+        // EDIT: Singularity when 2 centers are perfectly on-line to the normal from the origin
+        if (maxDist > EPSILON)
+            point += v[maxIndex]; // Standard cases
+        else
+            point += (v[0] + v[1] + v[2])/3; // Returns centroid instead
+
+        return point;
+    }
+
+    // TODO: boundingSphere
+}
+
+class GeomBVH: Geometry
+{
+    BVHTree tree;
+
+    this(BVHTree t)
+    {
+        tree = t;
+    }
 }
