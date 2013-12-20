@@ -317,3 +317,4 @@ final class BVHTree
         return 2.0f * (width * height + width * depth + height * depth);
     }
 }
+

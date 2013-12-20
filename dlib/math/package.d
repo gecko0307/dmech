@@ -1,5 +1,5 @@
 /*
-Copyright (c) 2011-2013 Timur Gafarov 
+Copyright (c) 2013 Timur Gafarov 
 
 Boost Software License - Version 1.0 - August 17th, 2003
 
@@ -26,50 +26,21 @@ ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
 DEALINGS IN THE SOFTWARE.
 */
 
-module dlib.functional.quantifiers;
+module dlib.math;
 
-// Universal quantifier
-bool forAll(T) (in T[] val, bool delegate(T) func)
+public
 {
-    foreach(v; val)
-        if (!func(v)) return false;
-    return true;
+    import dlib.math.affine;
+    import dlib.math.complex;
+    import dlib.math.diff;
+    import dlib.math.dual;
+    import dlib.math.fft;
+    import dlib.math.fixed;
+    import dlib.math.interpolation;
+    import dlib.math.linear;
+    import dlib.math.matrix;
+    import dlib.math.quaternion;
+    import dlib.math.utils;
+    import dlib.math.vector;
 }
 
-// Existential quantifier
-bool forSome(T) (in T[] val, bool delegate(T) func)
-{
-    foreach(v; val)
-        if (func(v)) return true;
-    return false;
-}
-
-// Uniqueness quantifier
-bool forOne(T) (in T[] val, bool delegate(T) func)
-{
-    bool res = false;
-    foreach(v; val)
-        if (func(v) && !res) 
-            res = true;
-        else 
-            return false;
-    return true;
-}
-
-// Plurality quantifier
-bool forMost(T) (in T[] val, bool delegate(T) func)
-{
-    size_t count = 0;
-    foreach(v; val)
-        if (func(v)) count++;
-    return (count > val.length * 0.5);
-}
-
-// Counting quantifier
-bool forN(size_t n, T) (in T[] val, bool delegate(T) func)
-{
-    size_t count = 0;
-    foreach(v; val)
-        if (func(v)) count++;
-    return (count >= n);
-}

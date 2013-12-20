@@ -1,5 +1,5 @@
 /*
-Copyright (c) 2011-2013 Timur Gafarov 
+Copyright (c) 2013 Timur Gafarov 
 
 Boost Software License - Version 1.0 - August 17th, 2003
 
@@ -26,75 +26,20 @@ ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
 DEALINGS IN THE SOFTWARE.
 */
 
-module dlib.functional.hof;
+module dlib.geometry;
 
-T apply(T, S...) (T delegate(S) func, S s)
+public
 {
-    return func(s);
+    import dlib.geometry.aabb;
+    import dlib.geometry.bezier;
+    import dlib.geometry.hermite;
+    import dlib.geometry.intersection;
+    import dlib.geometry.obb;
+    import dlib.geometry.plane;
+    import dlib.geometry.ray;
+    import dlib.geometry.sphere;
+    import dlib.geometry.triangle;
+    import dlib.geometry.trimesh;
+    import dlib.geometry.utils;
 }
 
-T map(T) (T val, T delegate(T) exp)
-{
-    return exp(val);
-}
-
-T[] map(T) (T[] val, T delegate(T) exp)
-{
-    foreach(ref v; val)
-        v = exp(v);
-    return val;
-}
-
-T[] map(T) (T[] val, void delegate(ref T) exp)
-{
-    foreach(ref v; val)
-        exp(v);
-    return val;
-}
-
-void forEvery(T) (T[] val, void delegate(T) exp)
-{
-    foreach(v; val)
-        exp(v);
-}
-
-T[] filter(T) (T[] arr, bool delegate(T i) func)
-{
-    auto newArr = arr.dup;
-    size_t j = 0;
-    arr.map((ref T v) 
-    {  
-        if (func(v)) 
-        { 
-            newArr[j] = v; 
-            j++; 
-        } 
-    });
-    newArr.length = j;
-    return newArr;
-}
-
-alias filter where;
-
-template Operator(T)
-{
-    alias T delegate(T, T) Operator;
-}
-
-T reduce(T) (in T[] numbers, T delegate(T, T) func)
-{
-    T res = 0;
-    foreach(n; numbers)
-        res = func(res, n);
-    return res;
-}
-
-T delegate(S) compose(T, U, S)(T function(U) f, U function(S) g) 
-{
-    return (S s) => f(g(s));
-}
-
-T delegate(S) compose(T, U, S)(T delegate(U) f, U delegate(S) g) 
-{
-    return (S s) => f(g(s));
-}

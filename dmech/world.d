@@ -70,8 +70,8 @@ class PhysicsWorld
         b.position = pos;
         b.mass = mass;
         b.invMass = 1.0f / mass;
-        b.inertiaMoment = b.mass;
-        b.invInertiaMoment = 1.0f / b.inertiaMoment;
+        //b.inertia = b.mass;
+        //b.invInertia = 1.0f / b.inertia;
         b.dynamic = true;
         b.id = maxBodyId;
         maxBodyId++;
@@ -85,8 +85,8 @@ class PhysicsWorld
         b.position = pos;
         b.mass = float.infinity;
         b.invMass = 0.0f;
-        b.inertiaMoment = float.infinity;
-        b.invInertiaMoment = 0.0f;
+        //b.inertia = float.infinity;
+        //b.invInertia = 0.0f;
         b.dynamic = false;
         b.id = maxBodyId;
         maxBodyId++;
@@ -107,6 +107,7 @@ class PhysicsWorld
 
         foreach(b; bodies)
         {
+            b.updateInertia();
             b.applyForce(gravity * b.mass);
             b.integrateForces(dt);
             b.resetForces();
@@ -165,7 +166,8 @@ class PhysicsWorld
             foreach(i; 0..m.numContacts)
             {
                 auto c = &m.contacts[i];
-                solveContact(c, dt);
+                solveContact(c, dt, true);
+                //solvePositionError(c, dt);
             }
         }
     }
@@ -181,3 +183,4 @@ class PhysicsWorld
         }
     }
 }
+

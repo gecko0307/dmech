@@ -105,23 +105,6 @@ struct ContactManifold
 
         uint numPts = 0;
 
-        // If colliding with a sphere, there's only one contact
-        if (c.body1.geometry.type == GeomType.Sphere ||
-            c.body2.geometry.type == GeomType.Sphere)
-        {
-            contacts[0] = c;
-            numContacts = 1;
-            return;
-        }
-
-        if (c.body1.geometry.type == GeomType.Ellipsoid ||
-            c.body2.geometry.type == GeomType.Ellipsoid)
-        {
-            contacts[0] = c;
-            numContacts = 1;
-            return;
-        }
-
         // Calculate tangent space for contact normal
         Vector3f n = c.normal;
         Vector3f n0 = cross(n, Vector3f(0.0f, 0.0f, 1.0f));
@@ -130,6 +113,27 @@ struct ContactManifold
         Vector3f n1 = cross(n, n0);
         n0.normalize();
         n1.normalize();
+
+        // If colliding with a sphere, there's only one contact
+        if (c.body1.geometry.type == GeomType.Sphere ||
+            c.body2.geometry.type == GeomType.Sphere)
+        {
+            contacts[0] = c;
+            contacts[0].fdir1 = n0;
+            contacts[0].fdir2 = n1;
+            numContacts = 1;
+            return;
+        }
+
+        if (c.body1.geometry.type == GeomType.Ellipsoid ||
+            c.body2.geometry.type == GeomType.Ellipsoid)
+        {
+            contacts[0] = c;
+            contacts[0].fdir1 = n0;
+            contacts[0].fdir2 = n1;
+            numContacts = 1;
+            return;
+        }
         
         Vector3f right = n0;
         Vector3f up = n1;
@@ -218,6 +222,7 @@ struct ContactManifold
 
         // Transform the resulting points back into 3D space       
         Contact[8] newManifold;
+        Vector3f centroid = Vector3f(0.0f, 0.0f, 0.0f);
         for(uint i = 0; i < numPts; i++)
         {
             Contact newc;
@@ -227,7 +232,18 @@ struct ContactManifold
             newc.point = unprojectPoint(pts[i], c.point, right, up);
             newc.normal = c.normal;
             newc.penetration = c.penetration;
+            centroid += newc.point;
+            //newc.fdir1 = (newc.point - c.point).normalized;//n0; //fdir1;
+            //newc.fdir2 = cross(newc.fdir1, c.normal); //n1; //fdir2;
             newManifold[i] = newc;
+        }
+
+        centroid /= numPts;
+
+        for(uint i = 0; i < numPts; i++)
+        {
+            newManifold[i].fdir1 = (newManifold[i].point - centroid).normalized;
+            newManifold[i].fdir2 = cross(newManifold[i].fdir1, c.normal);
         }
         
         // Update the existing manifold
@@ -258,6 +274,8 @@ struct ContactManifold
                     res[resNum].point = p2; //(p1 + p2) * 0.5f;
                     res[resNum].normal = newManifold[j].normal;
                     res[resNum].penetration = newManifold[j].penetration;
+                    res[resNum].fdir1 = newManifold[j].fdir1;
+                    res[resNum].fdir2 = newManifold[j].fdir2;
                     resNum++;
                     used[j] = true;
                 }

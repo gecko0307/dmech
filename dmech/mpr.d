@@ -84,7 +84,8 @@ bool MPRCollisionTest(
     Matrix4x4f transform2 = s2.transformation;
         
     // Initialization of the output
-    c.point = c.normal = Vector3f(0.0f, 0.0f, 0.0f);
+    c.point = Vector3f(0.0f, 0.0f, 0.0f);
+    c.normal = Vector3f(0.0f, 0.0f, 0.0f);
     c.penetration = 0.0f;
 
     // Get the center of shape1 in world coordinates
@@ -309,3 +310,4 @@ bool MPRCollisionTest(
     // Should never get here
     return false;
 }
+

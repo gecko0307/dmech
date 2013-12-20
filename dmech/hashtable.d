@@ -125,3 +125,4 @@ class PairHashTable(T): HashTable!(T)
         super.remove(szudzikPair(k1, k2));
     }
 }
+

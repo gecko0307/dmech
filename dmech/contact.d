@@ -50,5 +50,8 @@ struct Contact
     float accumulatedfImpulse = 0.0f;
     
     float initialVelocityProjection;
+
+    Vector3f fdir1;
+    Vector3f fdir2;
 }
 

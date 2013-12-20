@@ -51,8 +51,10 @@ class RigidBody
     float mass;
     float invMass;
     
-    float inertiaMoment;
-    float invInertiaMoment;
+    //float inertia;
+    //float invInertia;
+    Matrix3x3f inertia;
+    Matrix3x3f invInertia;
     
     Vector3f linearVelocity;
     Vector3f angularVelocity;
@@ -87,8 +89,8 @@ class RigidBody
         mass = 1.0f;
         invMass = 1.0f;
     
-        inertiaMoment = 1.0f;
-        invInertiaMoment = 1.0f;
+        //inertia = 1.0f;
+        //invInertia = 1.0f;
     
         linearVelocity = Vector3f(0.0f, 0.0f, 0.0f);
         angularVelocity = Vector3f(0.0f, 0.0f, 0.0f);
@@ -118,7 +120,7 @@ class RigidBody
             return;
             
         linearAcceleration = forceAccumulator * invMass;
-        angularAcceleration = torqueAccumulator * invInertiaMoment;
+        angularAcceleration = torqueAccumulator * invInertia;
         
         linearVelocity += linearAcceleration * dt;
         angularVelocity += angularAcceleration * dt;
@@ -140,6 +142,13 @@ class RigidBody
         position += linearVelocity * dt;
         orientation += 0.5f * Quaternionf(angularVelocity, 0.0f) * orientation * dt;
         orientation.normalize();
+        
+        position += pseudoLinearVelocity * dt;
+        orientation += 0.5f * Quaternionf(pseudoAngularVelocity, 0.0f) * orientation * dt;
+        orientation.normalize();
+        
+        pseudoLinearVelocity = Vector3f(0.0f, 0.0f, 0.0f);
+        pseudoAngularVelocity = Vector3f(0.0f, 0.0f, 0.0f);
     }
 
     void resetForces()
@@ -151,7 +160,34 @@ class RigidBody
     void setGeometry(Geometry geom)
     {
         geometry = geom;
+        if (dynamic)
+        {
+            inertia = geom.inertiaTensor(mass);
+            invInertia = inertia.inverse;
+        }
+        else
+        {
+            inertia = matrixf(
+                float.infinity, 0, 0,
+                0, float.infinity, 0,
+                0, 0, float.infinity
+            );
+            invInertia = matrixf(
+                0, 0, 0,
+                0, 0, 0,
+                0, 0, 0
+            );
+        }
         updateGeometryTransformation();
+    }
+
+    void updateInertia()
+    {
+        if (dynamic)
+        {
+            auto m = orientation.toMatrix3x3;
+            invInertia = (m * inertia * m.transposed).inverse;
+        }
     }
 
     void updateGeometryTransformation()
@@ -183,7 +219,17 @@ class RigidBody
 
         linearVelocity += impulse * invMass;
         Vector3f angularImpulse = cross(point - position, impulse);
-        angularVelocity += angularImpulse * invInertiaMoment;
+        angularVelocity += angularImpulse * invInertia;
+    }
+    
+    void applyPseudoImpulse(Vector3f impulse, Vector3f point)
+    {
+        if (!dynamic)
+            return;
+
+        pseudoLinearVelocity += impulse * invMass;
+        Vector3f angularImpulse = cross(point - position, impulse);
+        pseudoAngularVelocity += angularImpulse * invInertia;
     }
     
     Matrix4x4f transformation()
@@ -194,3 +240,4 @@ class RigidBody
         return t;
     }
 }
+

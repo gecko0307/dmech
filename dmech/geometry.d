@@ -69,15 +69,15 @@ abstract class Geometry
     {
         return Vector3f(0.0f, 0.0f, 0.0f);
     }
-    
-    float inertiaMoment(float mass)
-    {
-        return mass;
-    }
 
     @property Sphere boundingSphere()
     {
         return Sphere(position, 1.0f);
+    }
+
+    Matrix3x3f inertiaTensor(float mass)
+    {
+        return Matrix3x3f.identity * mass;
     }
 }
 
@@ -96,15 +96,21 @@ class GeomSphere: Geometry
     {
         return dir.normalized * radius;
     }
-    
-    override float inertiaMoment(float mass)
-    {
-        return 2.0f / 5.0f * mass * radius * radius;
-    }
 
     override @property Sphere boundingSphere()
     {
         return Sphere(position, radius);
+    }
+
+    override Matrix3x3f inertiaTensor(float mass)
+    {
+        float v = 0.4f * mass * radius * radius;
+
+        return matrixf(
+            v, 0, 0,
+            0, v, 0,
+            0, 0, v
+        );
     }
 }
 
@@ -131,6 +137,19 @@ class GeomBox: Geometry
     override @property Sphere boundingSphere()
     {
         return Sphere(position, halfSize.length);
+    }
+
+    override Matrix3x3f inertiaTensor(float mass)
+    {
+        float x2 = halfSize.x * halfSize.x;
+        float y2 = halfSize.y * halfSize.y;
+        float z2 = halfSize.z * halfSize.z;
+
+        return matrixf(
+            (y2 + z2)/3 * mass, 0, 0,
+            0, (x2 + z2)/3 * mass, 0,
+            0, 0, (x2 + y2)/3 * mass
+        );
     }
 }
 
@@ -166,6 +185,18 @@ class GeomCylinder: Geometry
         }
         
         return result;
+    }
+    
+    override Matrix3x3f inertiaTensor(float mass)
+    {
+        float r2 = radius * radius;
+        float h2 = height * height;
+
+        return matrixf(
+            (3*r2 + h2)/12 * mass, 0, 0,
+            0, (3*r2 + h2)/12 * mass, 0,
+            0, 0, r2/2 * mass
+        );
     }
 
     // TODO: boundingSphere
@@ -206,6 +237,24 @@ class GeomCone: Geometry
             return Vector3f(0.0f, 0.0f, -half_h);
     }
 
+    override Matrix3x3f inertiaTensor(float mass)
+    {
+        float r2 = radius * radius;
+        float h2 = height * height;
+/*
+        return matrixf(
+            (3/5*h2 + 3/10*r2) * mass, 0, 0,
+            0, (3/5*h2 + 3/10*r2) * mass, 0,
+            0, 0, (3/10*r2) * mass
+        );
+*/
+        return matrixf(
+            (3.0f/80.0f*h2 + 3.0f/20.0f*r2) * mass, 0, 0,
+            0, (3.0f/80.0f*h2 + 3.0f/20.0f*r2) * mass, 0,
+            0, 0, (3.0f/10.0f*r2) * mass
+        );
+    }
+
     // TODO: boundingSphere
 }
 
@@ -223,6 +272,19 @@ class GeomEllipsoid: Geometry
     override Vector3f supportPoint(Vector3f dir)
     {
         return dir.normalized * radii;
+    }
+    
+    override Matrix3x3f inertiaTensor(float mass)
+    {
+        float x2 = radii.x * radii.x;
+        float y2 = radii.y * radii.y;
+        float z2 = radii.z * radii.z;
+
+        return matrixf(
+            (y2 + z2)/5 * mass, 0, 0,
+            0, (x2 + z2)/5 * mass, 0,
+            0, 0, (x2 + y2)/5 * mass
+        );
     }
 
     // TODO: boundingSphere
@@ -294,7 +356,7 @@ class GeomTriangle: Geometry
 
     // TODO: boundingSphere
 }
-
+/*
 class GeomBVH: Geometry
 {
     BVHTree tree;
@@ -304,3 +366,4 @@ class GeomBVH: Geometry
         tree = t;
     }
 }
+*/

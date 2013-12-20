@@ -63,7 +63,7 @@ void prepareContact(Contact* c, bool warmstarting = false)
     }
 }
 
-void solveContact(Contact* c, float dt, bool warmstarting = false)
+void solveContact(Contact* c, float dt, bool baumgarte = false, bool warmstarting = false)
 {
     RigidBody body1 = c.body1;
     RigidBody body2 = c.body2;
@@ -93,16 +93,27 @@ void solveContact(Contact* c, float dt, bool warmstarting = false)
     float C = max(0, -bounce * c.initialVelocityProjection - damping);
 
     float a = velocityProjection;
+    /*
+        dot(body1.linearVelocity, n1)
+      + dot(cross(body1.angularVelocity, r1), w1)
+      + dot(body2.linearVelocity, n2)
+      + dot(cross(body2.angularVelocity, r2), w2);
+    */
+    
+    float bias = 0.0f;
+    
+    if (baumgarte)
+    {
+        float allowedPenetration = 0.02f;
+        float biasFactor = 0.2f; // 0.1 to 0.3
+        float inv_dt = 1.0f / dt;
+        bias = biasFactor * inv_dt * max(0.0f, c.penetration - allowedPenetration);
+    }
 
-    float allowedPenetration = 0.02f;
-    float biasFactor = 0.2f; // 0.1 to 0.3
-    float inv_dt = 1.0f / dt;
-    float bias = biasFactor * inv_dt * max(0.0f, c.penetration - allowedPenetration);
-
-    float b = dot(n1, n1) * body1.invMass
-            + dot(w1, w1) * body1.invInertiaMoment
-            + dot(n2, n2) * body2.invMass
-            + dot(w2, w2) * body2.invInertiaMoment;
+    float b = dot(n1, n1 * body1.invMass)
+            + dot(w1, w1 * body1.invInertia)
+            + dot(n2, n2 * body2.invMass)
+            + dot(w2, w2 * body2.invInertia);
 
     float normalImpulse = (C - a + bias) / b;
 
@@ -124,7 +135,7 @@ void solveContact(Contact* c, float dt, bool warmstarting = false)
     // Friction
     float mu = (body1.friction + body2.friction) * 0.5f;
     Vector3f fVec = Vector3f(0.0f, 0.0f, 0.0f);
-
+/*
     Vector3f fdir1, fdir2;
     if (dot(c.normal, Vector3f(1,0,0)) < 0.5f)
         fdir1 = cross(c.normal, Vector3f(1,0,0)); 
@@ -133,25 +144,25 @@ void solveContact(Contact* c, float dt, bool warmstarting = false)
     fdir2 = cross(fdir1, c.normal);
     fdir1.normalize();
     fdir2.normalize();
-    
-    Vector3f t = fdir1;
+*/
+    Vector3f t = c.fdir1;
     float num = -dot(relativeVelocity, t);
     float denom = 
         body1.invMass
       + body2.invMass
-      + dot(cross(r1, cross(t, r1) * body1.invInertiaMoment), t)
-      + dot(cross(r2, cross(t, r2) * body2.invInertiaMoment), t);
+      + dot(cross(r1, cross(t, r1) * body1.invInertia), t)
+      + dot(cross(r2, cross(t, r2) * body2.invInertia), t);
     float jf = num / denom;
     jf = clamp(jf, -normalImpulse * mu, normalImpulse * mu);
     fVec = t * jf;
 
-    t = fdir2;
+    t = c.fdir2;
     num = -dot(relativeVelocity, t);
     denom = 
         body1.invMass
       + body2.invMass
-      + dot(cross(r1, cross(t, r1) * body1.invInertiaMoment), t)
-      + dot(cross(r2, cross(t, r2) * body2.invInertiaMoment), t);
+      + dot(cross(r1, cross(t, r1) * body1.invInertia), t)
+      + dot(cross(r2, cross(t, r2) * body2.invInertia), t);
     jf = num / denom;
     jf = clamp(jf, -normalImpulse * mu, normalImpulse * mu);
     fVec += t * jf;
@@ -160,6 +171,47 @@ void solveContact(Contact* c, float dt, bool warmstarting = false)
     Vector3f impulseVec = c.normal * normalImpulse;
     impulseVec += fVec;
 
+    if (body1.dynamic) 
+        body1.applyImpulse(+impulseVec, c.point);
+    if (body2.dynamic) 
+        body2.applyImpulse(-impulseVec, c.point);
+}
+
+void solvePositionError(Contact* c, float dt)
+{
+    RigidBody body1 = c.body1;
+    RigidBody body2 = c.body2;
+    
+    Vector3f r1 = c.point - body1.position;
+    Vector3f r2 = c.point - body2.position;
+       
+    Vector3f prv = Vector3f(0.0f, 0.0f, 0.0f);
+    prv += body1.pseudoLinearVelocity + cross(body1.pseudoAngularVelocity, r1);
+    prv -= body2.pseudoLinearVelocity + cross(body2.pseudoAngularVelocity, r2);
+    float pvp = dot(prv, c.normal);
+    
+    float ERP = 1.0f;
+    float pc = c.penetration * ERP;
+    
+    if (pvp >= pc)
+        return;
+        
+    // Jacobian
+    Vector3f n1 = c.normal;
+    Vector3f w1 = c.normal.cross(r1);
+    Vector3f n2 = -c.normal;
+    Vector3f w2 = -c.normal.cross(r2);
+
+    float a = pvp;
+
+    float b = dot(n1, n1 * body1.invMass)
+            + dot(w1, w1 * body1.invInertia)
+            + dot(n2, n2 * body2.invMass)
+            + dot(w2, w2 * body2.invInertia);
+    
+    float impulse = (pc - a) / b;
+    Vector3f impulseVec = c.normal * impulse;
+    
     if (body1.dynamic) 
         body1.applyImpulse(+impulseVec, c.point);
     if (body2.dynamic) 

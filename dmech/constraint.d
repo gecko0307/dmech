@@ -76,7 +76,8 @@ class DistanceConstraint: Constraint
     
     override void prepare(double delta)
     {
-        r1 = r2 = Vector3f(0.0f, 0.0f, 0.0f);
+        r1 = Vector3f(0.0f, 0.0f, 0.0f);
+        r2 = Vector3f(0.0f, 0.0f, 0.0f);
 
         Vector3f p1, p2, dp;
         p1 = body1.position;
@@ -95,8 +96,8 @@ class DistanceConstraint: Constraint
         effectiveMass = 
             body1.invMass + 
             body2.invMass +
-            dot(jacobian[1] * body1.invInertiaMoment, jacobian[1]) +
-            dot(jacobian[3] * body2.invInertiaMoment, jacobian[3]);
+            dot(jacobian[1] * body1.invInertia, jacobian[1]) +
+            dot(jacobian[3] * body2.invInertia, jacobian[3]);
                 
         softnessOverDt = softness / delta;
         effectiveMass += softnessOverDt;
@@ -109,13 +110,13 @@ class DistanceConstraint: Constraint
         if (body1.dynamic)
         {
             body1.linearVelocity += jacobian[0] * accumulatedImpulse * body1.invMass;
-            body1.angularVelocity += jacobian[1] * accumulatedImpulse * body1.invInertiaMoment;
+            body1.angularVelocity += jacobian[1] * accumulatedImpulse * body1.invInertia;
         }
 
         if (body2.dynamic)
         {
             body2.linearVelocity += jacobian[2] * accumulatedImpulse * body2.invMass;
-            body2.angularVelocity += jacobian[3] * accumulatedImpulse * body2.invInertiaMoment;
+            body2.angularVelocity += jacobian[3] * accumulatedImpulse * body2.invInertia;
         }
     }
     
@@ -135,13 +136,13 @@ class DistanceConstraint: Constraint
         if (body1.dynamic)
         {
             body1.linearVelocity += jacobian[0] * lambda * body1.invMass;
-            body1.angularVelocity += jacobian[1] * lambda * body1.invInertiaMoment;
+            body1.angularVelocity += jacobian[1] * lambda * body1.invInertia;
         }
 
         if (body2.dynamic)
         {
             body2.linearVelocity += jacobian[2] * lambda * body2.invMass;
-            body2.angularVelocity += jacobian[3] * lambda * body2.invInertiaMoment;
+            body2.angularVelocity += jacobian[3] * lambda * body2.invInertia;
         }
     }
 }
@@ -198,8 +199,8 @@ class BallConstraint: Constraint
         effectiveMass = 
             body1.invMass + 
             body2.invMass +
-            dot(jacobian[1] * body1.invInertiaMoment, jacobian[1]) +
-            dot(jacobian[3] * body2.invInertiaMoment, jacobian[3]);
+            dot(jacobian[1] * body1.invInertia, jacobian[1]) +
+            dot(jacobian[3] * body2.invInertia, jacobian[3]);
 
         softnessOverDt = softness / delta;
         effectiveMass += softnessOverDt;
@@ -210,13 +211,13 @@ class BallConstraint: Constraint
         if (body1.dynamic)
         {
             body1.linearVelocity += jacobian[0] * body1.invMass * accumulatedImpulse;
-            body1.angularVelocity += jacobian[1] * body1.invInertiaMoment * accumulatedImpulse;
+            body1.angularVelocity += jacobian[1] * body1.invInertia * accumulatedImpulse;
         }
 
         if (body2.dynamic)
         {
             body2.linearVelocity += jacobian[2] * body2.invMass * accumulatedImpulse;
-            body2.angularVelocity += jacobian[3] * body2.invInertiaMoment * accumulatedImpulse;
+            body2.angularVelocity += jacobian[3] * body2.invInertia * accumulatedImpulse;
         }
     }
     
@@ -236,13 +237,13 @@ class BallConstraint: Constraint
         if (body1.dynamic)
         {
             body1.linearVelocity += jacobian[0] * body1.invMass * lambda;
-            body1.angularVelocity += jacobian[1] * body1.invInertiaMoment * lambda;
+            body1.angularVelocity += jacobian[1] * body1.invInertia * lambda;
         }
 
         if (body2.dynamic)
         {
             body2.linearVelocity += jacobian[2] * body2.invMass * lambda;
-            body2.angularVelocity += jacobian[3] * body2.invInertiaMoment * lambda;
+            body2.angularVelocity += jacobian[3] * body2.invInertia * lambda;
         }
     }
 }

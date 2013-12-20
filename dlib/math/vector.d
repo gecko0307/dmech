@@ -46,8 +46,18 @@ public:
 struct Vector(T, int size)
 {
     public:
+    
+    this (V)(V v)
+    {           
+        if (v.arrayof.length >= size)
+            foreach(i; 0..size)
+                arrayof[i] = v.arrayof[i];       
+        else
+            foreach(i; 0..v.arrayof.length)
+                arrayof[i] = v.arrayof[i];
+    }
 
-    this (T[] components...) 
+    this (F)(F[] components...) if (isNumeric!F)
     {        
         if (components.length >= size)
             foreach(i; 0..size)
@@ -57,13 +67,13 @@ struct Vector(T, int size)
                 arrayof[i] = components[i];
     }
 
-    this (T[size] components) 
+    this (F)(F[size] components) if (isNumeric!F)
     {
         foreach(i; 0..size)
             arrayof[i] = components[i]; 
     }
 
-    this (Vector v)
+    void opAssign(int size2)(Vector!(T,size2) v)
     {           
         if (v.arrayof.length >= size)
             foreach(i; 0..size)
@@ -178,6 +188,19 @@ struct Vector(T, int size)
     * Vector!(T,size) * T
     */
     Vector!(T,size) opBinary(string op) (T t) if (op == "*")
+    body
+    {
+        Vector!(T,size) res;
+        //foreach(i; 0..size)
+        foreach(i; RangeTuple!(0, size))
+            res.arrayof[i] = cast(T)(arrayof[i] * t);
+        return res;
+    }
+
+   /*
+    * T * Vector!(T,size)
+    */
+    Vector!(T,size) opBinaryRight(string op) (T t) if (op == "*" && isNumeric!T)
     body
     {
         Vector!(T,size) res;
@@ -513,10 +536,10 @@ struct Vector(T, int size)
 
         static if (s.length == 1)
         {
-            enum res = arrayof[["x":0, "y":1, "z":2, "w":3,
-                                "r":0, "g":1, "b":2, "a":3,
-                                "s":0, "t":1, "p":2, "q":3][s]];
-            return res;
+            enum i = ["x":0, "y":1, "z":2, "w":3,
+                      "r":0, "g":1, "b":2, "a":3,
+                      "s":0, "t":1, "p":2, "q":3][s];
+            return arrayof[i];
         }
         else
         {
@@ -572,26 +595,31 @@ struct Vector(T, int size)
 /*
  * Dot product
  */
-T dot(T, int size) (Vector!(T,size) a, Vector!(T,size) b) if (size == 2)
+T dot(T, int size) (Vector!(T,size) a, Vector!(T,size) b)
 body
 {
-    return ((a.x * b.x) + (a.y * b.y));
-}
-
-T dot(T, int size) (Vector!(T,size) a, Vector!(T,size) b) if (size == 3)
-body
-{
-    return ((a.x * b.x) + (a.y * b.y) + (a.z * b.z));
-}
-
-T dot(T, int size) (Vector!(T,size) a, Vector!(T,size) b) if (size != 3)
-body
-{
-    T d = 0;
-    //foreach (i; 0..size)
-    foreach(i; RangeTuple!(0, size))
-        d += a[i] * b[i];
-    return d;
+    static if (size == 1)
+    {
+        return a.x * b.x;
+    }
+    else
+    static if (size == 2)
+    {
+        return ((a.x * b.x) + (a.y * b.y));
+    }
+    else
+    static if (size == 3)
+    {
+        return ((a.x * b.x) + (a.y * b.y) + (a.z * b.z));
+    }
+    else
+    {
+        T d = 0;
+        //foreach (i; 0..size)
+        foreach(i; RangeTuple!(0, size))
+            d += a[i] * b[i];
+        return d;
+    }
 }
 
 /*

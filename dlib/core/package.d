@@ -1,5 +1,5 @@
 /*
-Copyright (c) 2011-2013 Timur Gafarov 
+Copyright (c) 2013 Timur Gafarov 
 
 Boost Software License - Version 1.0 - August 17th, 2003
 
@@ -26,28 +26,18 @@ ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
 DEALINGS IN THE SOFTWARE.
 */
 
-module dlib.functional.range;
+module dlib.core;
 
-pure T[] range(T) (T minb, T maxb)
-in
+public
 {
-    assert (minb < maxb);
-}
-body
-{
-    T[] r = new T[maxb - minb];
-    foreach(i, v; r) r[i] = minb + i;
-    return r;
+    import dlib.core.aarray;
+    import dlib.core.bst;
+    import dlib.core.compound;
+    import dlib.core.hash;
+    import dlib.core.linkedlist;
+    import dlib.core.method;
+    import dlib.core.queue;
+    import dlib.core.stack;
+    import dlib.core.tuple;
 }
 
-pure T[] range(T) (T maxb)
-in
-{
-    assert (0 < maxb);
-}
-body
-{
-    T[] r = new T[maxb];
-    foreach(i, v; r) r[i] = i;
-    return r;
-}
