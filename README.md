@@ -18,6 +18,10 @@ Planned in future:
 * Kinematic bodies
 * In long-term: vehicle engine, particles, soft-body physics
 
+Dependencies
+------------
+The project is completely self-sufficient, though dmech heavily relies on [dlib](http://github.com/gecko0307/dlib) - a collection of utility libraries for D, including linear math and comutational geometry functionality. dlib is currently under active development and has no stable release yet, so dmech comes with a compatible version of dlib source tree bundled. I try to sync the codebase timely, but dmech occasionally lags behind.
+
 License
 -------
 Copyright (c) 2013 Timur Gafarov.
