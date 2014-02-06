@@ -44,19 +44,19 @@ void supportTransformed(Geometry s, Vector3f dir, out Vector3f result)
 {
     Matrix4x4f m = s.transformation;
 
-    result.x = ((dir.x * m.a11) + (dir.y * m.a12)) + (dir.z * m.a13);
-    result.y = ((dir.x * m.a21) + (dir.y * m.a22)) + (dir.z * m.a23);
-    result.z = ((dir.x * m.a31) + (dir.y * m.a32)) + (dir.z * m.a33);
+    result.x = ((dir.x * m.a11) + (dir.y * m.a21)) + (dir.z * m.a31);
+    result.y = ((dir.x * m.a12) + (dir.y * m.a22)) + (dir.z * m.a32);
+    result.z = ((dir.x * m.a13) + (dir.y * m.a23)) + (dir.z * m.a33);
 
     result = s.supportPoint(result);
 
-    float x = ((result.x * m.a11) + (result.y * m.a21)) + (result.z * m.a31);
-    float y = ((result.x * m.a12) + (result.y * m.a22)) + (result.z * m.a32);
-    float z = ((result.x * m.a13) + (result.y * m.a23)) + (result.z * m.a33);
+    float x = ((result.x * m.a11) + (result.y * m.a12)) + (result.z * m.a13);
+    float y = ((result.x * m.a21) + (result.y * m.a22)) + (result.z * m.a23);
+    float z = ((result.x * m.a31) + (result.y * m.a32)) + (result.z * m.a33);
 
-    result.x = m.a41 + x;
-    result.y = m.a42 + y;
-    result.z = m.a43 + z;
+    result.x = m.a14 + x;
+    result.y = m.a24 + y;
+    result.z = m.a34 + z;
 }
 
 /*
@@ -70,7 +70,7 @@ bool MPRCollisionTest(
     ref Contact c)
 {
     enum float collideEpsilon = 1e-4f;
-    enum maxIterations = 20;
+    enum maxIterations = 10;
     
     // Used variables
     Vector3f temp1;

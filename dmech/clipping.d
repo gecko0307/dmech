@@ -101,6 +101,14 @@ bool segmentIsec(
     return true;
 }
 
+T distancesqr2(T) (Vector!(T,2) a, Vector!(T,2) b)
+body
+{
+    T dx = a.x - b.x;
+    T dy = a.y - b.y;
+    return ((dx * dx) + (dy * dy));
+}
+
 // Perform clipping of two features
 bool clip(
     Feature f1,
@@ -120,6 +128,22 @@ bool clip(
         numOutPts = 1;
     }
 */
+
+    // Check if features are almost the same
+    if (f1.numVertices == f2.numVertices)
+    {
+        bool same = false;
+        for (uint i = 0; i < f1.numVertices; i++)
+            same = same || distancesqr2(f1.vertices[i], f2.vertices[i]) < 0.001f;
+        if (same)
+        {
+            // result is f1
+            for (uint i = 0; i < f1.numVertices; i++)
+                outPts[i] = f1.vertices[i];
+            numOutPts = f1.numVertices;
+            return true;
+        }
+    }
 
     // Check if one feature fully encloses another
     bool[4] r1;

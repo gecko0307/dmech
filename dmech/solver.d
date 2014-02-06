@@ -135,38 +135,33 @@ void solveContact(Contact* c, float dt, bool baumgarte = false, bool warmstartin
     // Friction
     float mu = (body1.friction + body2.friction) * 0.5f;
     Vector3f fVec = Vector3f(0.0f, 0.0f, 0.0f);
-/*
-    Vector3f fdir1, fdir2;
-    if (dot(c.normal, Vector3f(1,0,0)) < 0.5f)
-        fdir1 = cross(c.normal, Vector3f(1,0,0)); 
-    else
-        fdir1 = cross(c.normal, Vector3f(0,0,1));
-    fdir2 = cross(fdir1, c.normal);
-    fdir1.normalize();
-    fdir2.normalize();
-*/
-    Vector3f t = c.fdir1;
-    float num = -dot(relativeVelocity, t);
-    float denom = 
-        body1.invMass
-      + body2.invMass
-      + dot(cross(r1, cross(t, r1) * body1.invInertia), t)
-      + dot(cross(r2, cross(t, r2) * body2.invInertia), t);
-    float jf = num / denom;
-    jf = clamp(jf, -normalImpulse * mu, normalImpulse * mu);
-    fVec = t * jf;
 
-    t = c.fdir2;
-    num = -dot(relativeVelocity, t);
-    denom = 
-        body1.invMass
-      + body2.invMass
-      + dot(cross(r1, cross(t, r1) * body1.invInertia), t)
-      + dot(cross(r2, cross(t, r2) * body2.invInertia), t);
-    jf = num / denom;
-    jf = clamp(jf, -normalImpulse * mu, normalImpulse * mu);
-    fVec += t * jf;
-    
+    Vector3f tn1 = c.fdir1;
+    Vector3f tw1 = c.fdir1.cross(r1);
+    Vector3f tn2 = -c.fdir1;
+    Vector3f tw2 = -c.fdir1.cross(r2);
+    float ta = dot(relativeVelocity, c.fdir1);
+    float tb = dot(tn1, tn1 * body1.invMass)
+             + dot(tw1, tw1 * body1.invInertia)
+             + dot(tn2, tn2 * body2.invMass)
+             + dot(tw2, tw2 * body2.invInertia);
+    float tlambda = -ta / tb;
+    tlambda = clamp(tlambda, -normalImpulse * mu, normalImpulse * mu);
+    fVec = c.fdir1 * tlambda;
+
+    tn1 = c.fdir2;
+    tw1 = c.fdir2.cross(r1);
+    tn2 = -c.fdir2;
+    tw2 = -c.fdir2.cross(r2);
+    ta = dot(relativeVelocity, c.fdir2);
+    tb = dot(tn1, tn1 * body1.invMass)
+       + dot(tw1, tw1 * body1.invInertia)
+       + dot(tn2, tn2 * body2.invMass)
+       + dot(tw2, tw2 * body2.invInertia);
+    tlambda = -ta / tb;
+    tlambda = clamp(tlambda, -normalImpulse * mu, normalImpulse * mu);
+    fVec += c.fdir2 * tlambda;
+   
     // Apply impulse
     Vector3f impulseVec = c.normal * normalImpulse;
     impulseVec += fVec;

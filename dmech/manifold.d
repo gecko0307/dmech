@@ -106,11 +106,12 @@ struct ContactManifold
         uint numPts = 0;
 
         // Calculate tangent space for contact normal
-        Vector3f n = c.normal;
-        Vector3f n0 = cross(n, Vector3f(0.0f, 0.0f, 1.0f));
-        if (abs(n0.length) < 0.01f)
-            n0 = cross(n, Vector3f(1.0f, 0.0f, 0.0f));
-        Vector3f n1 = cross(n, n0);
+        Vector3f n0, n1;
+        if (dot(c.normal, Vector3f(1,0,0)) < 0.5f)
+            n0 = cross(c.normal, Vector3f(1,0,0)); 
+        else
+            n0 = cross(c.normal, Vector3f(0,0,1));
+        n1 = cross(n0, c.normal);
         n0.normalize();
         n1.normalize();
 
@@ -232,18 +233,25 @@ struct ContactManifold
             newc.point = unprojectPoint(pts[i], c.point, right, up);
             newc.normal = c.normal;
             newc.penetration = c.penetration;
-            centroid += newc.point;
-            //newc.fdir1 = (newc.point - c.point).normalized;//n0; //fdir1;
-            //newc.fdir2 = cross(newc.fdir1, c.normal); //n1; //fdir2;
+            if (numPts > 1)
+                centroid += newc.point;
+            else
+            {
+                newc.fdir1 = n0;
+                newc.fdir2 = n1;
+            }
             newManifold[i] = newc;
         }
 
-        centroid /= numPts;
-
-        for(uint i = 0; i < numPts; i++)
+        if (numPts > 1)
         {
-            newManifold[i].fdir1 = (newManifold[i].point - centroid).normalized;
-            newManifold[i].fdir2 = cross(newManifold[i].fdir1, c.normal);
+            centroid /= numPts;
+
+            for(uint i = 0; i < numPts; i++)
+            {
+                newManifold[i].fdir1 = (newManifold[i].point - centroid).normalized;
+                newManifold[i].fdir2 = cross(newManifold[i].fdir1, c.normal);
+            }
         }
         
         // Update the existing manifold

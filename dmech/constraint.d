@@ -162,7 +162,7 @@ class BallConstraint: Constraint
     float accumulatedImpulse = 0.0f;
     
     float biasFactor = 0.1f;
-    float softness = 0.05f;
+    float softness = 0.01f; //0.05f;
     
     float softnessOverDt;
     float effectiveMass;

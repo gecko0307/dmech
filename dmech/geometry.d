@@ -70,14 +70,19 @@ abstract class Geometry
         return Vector3f(0.0f, 0.0f, 0.0f);
     }
 
+    Matrix3x3f inertiaTensor(float mass)
+    {
+        return Matrix3x3f.identity * mass;
+    }
+
     @property Sphere boundingSphere()
     {
         return Sphere(position, 1.0f);
     }
-
-    Matrix3x3f inertiaTensor(float mass)
+    
+    @property AABB boundingBox()
     {
-        return Matrix3x3f.identity * mass;
+        return AABB(position, Vector3f(1.0f, 1.0f, 1.0f));
     }
 }
 
@@ -97,11 +102,6 @@ class GeomSphere: Geometry
         return dir.normalized * radius;
     }
 
-    override @property Sphere boundingSphere()
-    {
-        return Sphere(position, radius);
-    }
-
     override Matrix3x3f inertiaTensor(float mass)
     {
         float v = 0.4f * mass * radius * radius;
@@ -112,17 +112,29 @@ class GeomSphere: Geometry
             0, 0, v
         );
     }
+    
+    override @property Sphere boundingSphere()
+    {
+        return Sphere(position, radius);
+    }
+    
+    override @property AABB boundingBox()
+    {
+        return AABB(position, Vector3f(radius, radius, radius));
+    }
 }
 
 class GeomBox: Geometry
 {
     Vector3f halfSize;
+    float bsphereRadius;
 
     this(Vector3f hsize)
     {
         super();
         type = GeomType.Box;
         halfSize = hsize;
+        bsphereRadius = halfSize.length;
     }
 
     override Vector3f supportPoint(Vector3f dir)
@@ -132,11 +144,6 @@ class GeomBox: Geometry
         result.y = sign(dir.y) * halfSize.y;
         result.z = sign(dir.z) * halfSize.z;
         return result;
-    }
-
-    override @property Sphere boundingSphere()
-    {
-        return Sphere(position, halfSize.length);
     }
 
     override Matrix3x3f inertiaTensor(float mass)
@@ -150,6 +157,17 @@ class GeomBox: Geometry
             0, (x2 + z2)/3 * mass, 0,
             0, 0, (x2 + y2)/3 * mass
         );
+    }
+    
+    override @property Sphere boundingSphere()
+    {
+        return Sphere(position, bsphereRadius);
+    }
+    
+    override @property AABB boundingBox()
+    {
+        return AABB(position, 
+            Vector3f(bsphereRadius, bsphereRadius, bsphereRadius));
     }
 }
 
@@ -199,7 +217,19 @@ class GeomCylinder: Geometry
         );
     }
 
-    // TODO: boundingSphere
+    override @property Sphere boundingSphere()
+    {
+        float rsum = radius + radius;
+        float d = sqrt(rsum * rsum + height * height) * 0.5f;
+        return Sphere(position, d);
+    }
+    
+    override @property AABB boundingBox()
+    {
+        float rsum = radius + radius;
+        float d = sqrt(rsum * rsum + height * height) * 0.5f;
+        return AABB(position, Vector3f(d, d, d));
+    }
 }
 
 class GeomCone: Geometry
@@ -256,6 +286,7 @@ class GeomCone: Geometry
     }
 
     // TODO: boundingSphere
+    // TODO: boundingBox
 }
 
 class GeomEllipsoid: Geometry
@@ -288,6 +319,7 @@ class GeomEllipsoid: Geometry
     }
 
     // TODO: boundingSphere
+    // TODO: boundingBox
 }
 
 class GeomTriangle: Geometry
@@ -355,15 +387,6 @@ class GeomTriangle: Geometry
     }
 
     // TODO: boundingSphere
+    // TODO: boundingBox
 }
-/*
-class GeomBVH: Geometry
-{
-    BVHTree tree;
 
-    this(BVHTree t)
-    {
-        tree = t;
-    }
-}
-*/

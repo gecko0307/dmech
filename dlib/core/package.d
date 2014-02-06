@@ -38,6 +38,7 @@ public
     import dlib.core.method;
     import dlib.core.queue;
     import dlib.core.stack;
+    import dlib.core.stream;
     import dlib.core.tuple;
 }
 

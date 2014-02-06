@@ -36,6 +36,8 @@ import dlib.math.affine;
 import dlib.math.quaternion;
 import dlib.math.utils;
 
+import dlib.geometry.aabb;
+
 import dmech.geometry;
 
 /*
@@ -238,6 +240,11 @@ class RigidBody
         t = translationMatrix(position);
         t *= orientation.toMatrix4x4();
         return t;
+    }
+
+    @property AABB boundingBox()
+    {
+        return geometry.boundingBox;
     }
 }
 

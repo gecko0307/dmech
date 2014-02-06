@@ -8,7 +8,7 @@ Already implemented:
 * Impulse-based rigid body dynamics with iterative SI solver
 * Basic geometry shapes (sphere, box, cylinder, cone, ellipsoid)
 * Support for any convex shapes defined by support mapping
-* Body constraints: distance, ball-socket, slider
+* Simple body constraints: distance, ball-socket, slider
 
 Planned in future:
 * More shapes (capsule, plane, convex hull, etc.)

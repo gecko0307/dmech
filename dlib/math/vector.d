@@ -30,6 +30,7 @@ module dlib.math.vector;
 
 private
 {
+    import std.conv;
     import std.math;
     import std.random;
     import std.range;
@@ -47,7 +48,7 @@ struct Vector(T, int size)
 {
     public:
     
-    this (V)(V v)
+    this (int size2)(Vector!(T, size2) v)
     {           
         if (v.arrayof.length >= size)
             foreach(i; 0..size)
@@ -73,6 +74,11 @@ struct Vector(T, int size)
             arrayof[i] = components[i]; 
     }
 
+    this (S)(S str) if (isSomeString!S)
+    {
+        arrayof = parse!(T[size])(str);
+    }
+
     void opAssign(int size2)(Vector!(T,size2) v)
     {           
         if (v.arrayof.length >= size)
@@ -86,7 +92,7 @@ struct Vector(T, int size)
    /* 
     * -Vector!(T,size)
     */
-    Vector!(T,size) opUnary(string s) () if (s == "-")
+    Vector!(T,size) opUnary(string s) () const if (s == "-")
     body
     {
         Vector!(T,size) res;
@@ -100,7 +106,7 @@ struct Vector(T, int size)
    /* 
     * +Vector!(T,size)
     */
-    Vector!(T,size) opUnary(string s) () if (s == "+")
+    Vector!(T,size) opUnary(string s) () const if (s == "+")
     body
     {
         return Vector!(T,size)(this);
@@ -109,7 +115,7 @@ struct Vector(T, int size)
    /*
     * Vector!(T,size) + Vector!(T,size)
     */
-    Vector!(T,size) opAdd (Vector!(T,size) v)
+    Vector!(T,size) opAdd (Vector!(T,size) v) const
     body
     {
         Vector!(T,size) res;
@@ -122,7 +128,7 @@ struct Vector(T, int size)
    /*
     * Vector!(T,size) - Vector!(T,size)
     */
-    Vector!(T,size) opSub (Vector!(T,size) v)
+    Vector!(T,size) opSub (Vector!(T,size) v) const
     body
     {
         Vector!(T,size) res;
@@ -135,7 +141,7 @@ struct Vector(T, int size)
    /*
     * Vector!(T,size) * Vector!(T,size)
     */
-    Vector!(T,size) opBinary(string op) (Vector!(T,size) v) if (op == "*")
+    Vector!(T,size) opBinary(string op) (Vector!(T,size) v) const if (op == "*")
     body
     {
         Vector!(T,size) res;
@@ -148,7 +154,7 @@ struct Vector(T, int size)
    /*
     * Vector!(T,size) / Vector!(T,size)
     */
-    Vector!(T,size) opDiv (Vector!(T,size) v)
+    Vector!(T,size) opDiv (Vector!(T,size) v) const
     body
     {
         Vector!(T,size) res;
@@ -161,7 +167,7 @@ struct Vector(T, int size)
    /*
     * Vector!(T,size) + T
     */
-    Vector!(T,size) opAdd (T t)
+    Vector!(T,size) opAdd (T t) const
     body
     {
         Vector!(T,size) res;
@@ -174,7 +180,7 @@ struct Vector(T, int size)
    /*
     * Vector!(T,size) - T
     */
-    Vector!(T,size) opSub (T t)
+    Vector!(T,size) opSub (T t) const
     body
     {
         Vector!(T,size) res;
@@ -187,7 +193,7 @@ struct Vector(T, int size)
    /*
     * Vector!(T,size) * T
     */
-    Vector!(T,size) opBinary(string op) (T t) if (op == "*")
+    Vector!(T,size) opBinary(string op) (T t) const if (op == "*")
     body
     {
         Vector!(T,size) res;
@@ -200,7 +206,7 @@ struct Vector(T, int size)
    /*
     * T * Vector!(T,size)
     */
-    Vector!(T,size) opBinaryRight(string op) (T t) if (op == "*" && isNumeric!T)
+    Vector!(T,size) opBinaryRight(string op) (T t) const if (op == "*" && isNumeric!T)
     body
     {
         Vector!(T,size) res;
@@ -213,7 +219,7 @@ struct Vector(T, int size)
    /*
     * Vector!(T,size) / T
     */
-    Vector!(T,size) opDiv (T t)
+    Vector!(T,size) opDiv (T t) const
     body
     {
         Vector!(T,size) res;
@@ -322,7 +328,7 @@ struct Vector(T, int size)
    /*
     * T = Vector!(T,size)[index]
     */
-    auto ref T opIndex (size_t index)
+    auto ref T opIndex (this X)(size_t index)
     in
     {
         assert ((0 <= index) && (index < size),
@@ -350,7 +356,7 @@ struct Vector(T, int size)
    /*
     * T[] = Vector!(T,size)[index1..index2]
     */
-    T[] opSlice (size_t index1, size_t index2)
+    auto opSlice (this X)(size_t index1, size_t index2)
     in
     {
         assert ((0 <= index1) || (index1 < 3) || (0 <= index2) || (index2 < 3) || (index1 < index2), 
@@ -379,7 +385,7 @@ struct Vector(T, int size)
    /*
     * T = Vector!(T,size)[]
     */
-    T[] opSlice ()
+    auto opSlice (this X)()
     body
     {
         return arrayof[];
@@ -403,7 +409,7 @@ struct Vector(T, int size)
        /*
         * Get vector length squared
         */
-        @property T lengthsqr()
+        @property T lengthsqr() const
         body
         {
             T res = 0;
@@ -415,7 +421,7 @@ struct Vector(T, int size)
        /*
         * Get vector length
         */
-        @property T length()
+        @property T length() const
         body
         {
             static if (isFloatingPoint!T)
@@ -465,7 +471,7 @@ struct Vector(T, int size)
        /*
         * Return normalized copy
         */
-        @property Vector!(T,size) normalized()
+        @property Vector!(T,size) normalized() const
         body
         {
             Vector!(T,size) res = this;
@@ -476,7 +482,7 @@ struct Vector(T, int size)
        /*
         * Return true if all components are zero
         */
-        @property bool isZero()
+        @property bool isZero() const
         body
         {
             return (arrayof[] == [0]);
@@ -514,7 +520,7 @@ struct Vector(T, int size)
    /*
     * Convert to string
     */
-    @property string toString()
+    @property string toString() const
     body
     {
         auto writer = appender!string();
@@ -525,39 +531,51 @@ struct Vector(T, int size)
    /*
     * Swizzling
     */
-    @property auto ref opDispatch(string s)() if (s.length <= 4 && valid(s))
+    template opDispatch(string s) if (valid(s))
     {
-        auto extend(string s) 
-        {
-            while (s.length < 4) 
-                s ~= s[$-1];
-            return s;
-        }
-
         static if (s.length == 1)
         {
             enum i = ["x":0, "y":1, "z":2, "w":3,
                       "r":0, "g":1, "b":2, "a":3,
                       "s":0, "t":1, "p":2, "q":3][s];
-            return arrayof[i];
-        }
-        else
-        {
-            enum p = extend(s);
-            enum i = (char c) => ['x':0, 'y':1, 'z':2, 'w':3,
-                                  'r':0, 'g':1, 'b':2, 'a':3,
-                                  's':0, 't':1, 'p':2, 'q':3][c]; //[3,0,1,2][c-'w'];
-            enum i0 = i(p[0]), 
-                 i1 = i(p[1]), 
-                 i2 = i(p[2]), 
-                 i3 = i(p[3]);
 
-            static if (s.length == 4)
-                return Vector!(T,4)(arrayof[i0], arrayof[i1], arrayof[i2], arrayof[i3]);
-            else static if (s.length == 3)
-                return Vector!(T,3)(arrayof[i0], arrayof[i1], arrayof[i2]);
-            else static if (s.length == 2)
-                return Vector!(T,2)(arrayof[i0], arrayof[i1]);
+            @property auto ref opDispatch(this X)()
+            {
+                return arrayof[i];
+            }
+
+            @property auto ref opDispatch(this X, V)(auto ref V v)
+            {
+                return arrayof[i] = v;
+            }
+        }
+        else static if (s.length <= 4)
+        { 
+            @property auto ref opDispatch(this X)()
+            {
+                auto extend(string s) 
+                {
+                    while (s.length < 4) 
+                        s ~= s[$-1];
+                    return s;
+                }
+
+                enum p = extend(s);
+                enum i = (char c) => ['x':0, 'y':1, 'z':2, 'w':3,
+                                      'r':0, 'g':1, 'b':2, 'a':3,
+                                      's':0, 't':1, 'p':2, 'q':3][c];
+                enum i0 = i(p[0]), 
+                     i1 = i(p[1]), 
+                     i2 = i(p[2]), 
+                     i3 = i(p[3]);
+
+                static if (s.length == 4)
+                    return Vector!(T,4)(arrayof[i0], arrayof[i1], arrayof[i2], arrayof[i3]);
+                else static if (s.length == 3)
+                    return Vector!(T,3)(arrayof[i0], arrayof[i1], arrayof[i2]);
+                else static if (s.length == 2)
+                    return Vector!(T,2)(arrayof[i0], arrayof[i1]);
+            }
         }
     }
 
@@ -852,3 +870,25 @@ enum AxisVector: Vector3f
 }
 */
 
+unittest
+{
+    const vec3 a = vec3(10.5f, 20.0f, 33.12345f);
+    const vec3 b = -a;
+    const vec3 c = +a - b;
+    const vec3 d = a * b / c;
+
+    assert(isAlmostZero(to!vec3(c.toString()) - c));
+
+    ivec2 ab = ivec2(5, 15);
+    ab += ivec2(20, 30);
+    ab *= 3;
+
+    assert(ab[0] == 75 && ab[1] == 135);
+
+    c.length();
+    c.lengthsqr();
+    distance(a, b);
+
+    auto xy = a[0..1];
+    auto n = a[];
+}

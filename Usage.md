@@ -37,7 +37,7 @@ Then, align your graphical objects to corresponding body matrices:
 
 4x4 matrices are OpenGL-friendly. Layout is the following:
 
-    1 0 0 0
-    0 1 0 0
-    0 0 1 0
-    x y z 1
+    1 0 0 x
+    0 1 0 y
+    0 0 1 z
+    0 0 0 1

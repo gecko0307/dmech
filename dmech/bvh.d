@@ -36,8 +36,6 @@ import dlib.math.utils;
 import dlib.math.vector;
 import dlib.geometry.aabb;
 import dlib.geometry.sphere;
-import dlib.geometry.triangle;
-import dlib.geometry.trimesh;
 import dlib.geometry.ray;
 
 /*
@@ -96,9 +94,9 @@ Compound!(AABB, AABB) boxSplitWithPlane(AABB box, SplitPlane sp)
     return compound(leftB, rightB);
 }
 
-AABB boxFromTriangles(Triangle[] tris)
+AABB enclosingAABB(T)(T[] objects)
 {
-    Vector3f pmin = tris[0].boundingBox.pmin;
+    Vector3f pmin = objects[0].boundingBox.pmin;
     Vector3f pmax = pmin;
     
     void adjustMinPoint(Vector3f p)
@@ -115,30 +113,30 @@ AABB boxFromTriangles(Triangle[] tris)
         if (p.z > pmax.z) pmax.z = p.z;
     }
 
-    foreach(ref tri; tris)
+    foreach(ref obj; objects)
     {
-        adjustMinPoint(tri.boundingBox.pmin);
-        adjustMaxPoint(tri.boundingBox.pmax);
+        adjustMinPoint(obj.boundingBox.pmin);
+        adjustMaxPoint(obj.boundingBox.pmax);
     }
     
     return boxFromMinMaxPoints(pmin, pmax);
 }
 
-class BVHNode
+class BVHNode(T)
 {
-    Triangle[] tris;
+    T[] objects;
     AABB aabb;
     BVHNode[2] child;
     uint userData;
 
-    this(Triangle[] t)
+    this(T[] objs)
     {
-        tris = t;
-        aabb = boxFromTriangles(tris);
+        objects = objs;
+        aabb = enclosingAABB(objects); //boxFromTriangles(objects);
     }
 }
 
-void traverseBySphere(BVHNode node, ref Sphere sphere, void delegate(ref Triangle) func)
+void traverseBySphere(T)(BVHNode!T node, ref Sphere sphere, void delegate(ref T) func)
 {
     Vector3f cn;
     float pd;
@@ -149,12 +147,12 @@ void traverseBySphere(BVHNode node, ref Sphere sphere, void delegate(ref Triangl
         if (node.child[1] !is null)
             node.child[1].traverseBySphere(sphere, func);
 
-        foreach(ref tri; node.tris)
-            func(tri);
+        foreach(ref obj; node.objects)
+            func(obj);
     }
 }
 
-void traverse(BVHNode node, void delegate(BVHNode) func)
+void traverse(T)(BVHNode!T node, void delegate(BVHNode!T) func)
 {
     if (node.child[0] !is null)
         node.child[0].traverse(func);
@@ -164,7 +162,7 @@ void traverse(BVHNode node, void delegate(BVHNode) func)
     func(node);
 }
 
-void traverseByRay(BVHNode node, Ray ray, void delegate(ref Triangle) func)
+void traverseByRay(T)(BVHNode!T node, Ray ray, void delegate(ref T) func)
 {
     float it = 0.0f;
     if (node.aabb.intersectsSegment(ray.p0, ray.p1, it))
@@ -174,8 +172,8 @@ void traverseByRay(BVHNode node, Ray ray, void delegate(ref Triangle) func)
         if (node.child[1] !is null)
             node.child[1].traverseByRay(ray, func);
 
-        foreach(ref tri; node.tris)
-            func(tri);
+        foreach(ref obj; node.objects)
+            func(obj);
     }
 }
 
@@ -189,73 +187,73 @@ enum Heuristic
     //ESC  // Early Split Clipping
 }
 
-final class BVHTree
+class BVHTree(T)
 {
-    BVHNode root;
+    BVHNode!T root;
 
-    this(Triangle[] tris, 
+    this(T[] objects, 
          uint maxObjectsPerNode = 8,
          Heuristic splitHeuristic = Heuristic.SAH)
     {
-        root = construct(tris, maxObjectsPerNode, splitHeuristic);
+        root = construct(objects, maxObjectsPerNode, splitHeuristic);
     }
 
-    BVHNode construct(
-         Triangle[] tris, 
+    BVHNode!T construct(
+         T[] objects, 
          uint maxObjectsPerNode,
          Heuristic splitHeuristic)
     {
-        AABB box = boxFromTriangles(tris);
+        AABB box = enclosingAABB(objects);
         
         SplitPlane sp;
         if (splitHeuristic == Heuristic.HMA)
-            sp = getHalfMainAxisSplitPlane(tris, box);
+            sp = getHalfMainAxisSplitPlane(objects, box);
         else if (splitHeuristic == Heuristic.SAH)
-            sp = getSAHSplitPlane(tris, box);
+            sp = getSAHSplitPlane(objects, box);
         else
             assert(0, "BVH: unsupported split heuristic");
             
         auto boxes = boxSplitWithPlane(box, sp);
 
-        Triangle[] leftTris;
-        Triangle[] rightTris;
+        T[] leftObjects;
+        T[] rightObjects;
     
-        foreach(tri; tris)
+        foreach(obj; objects)
         {
-            if (boxes[0].intersectsAABB(tri.boundingBox))
-                leftTris ~= tri;
-            else if (boxes[1].intersectsAABB(tri.boundingBox))
-                rightTris ~= tri;
+            if (boxes[0].intersectsAABB(obj.boundingBox))
+                leftObjects ~= obj;
+            else if (boxes[1].intersectsAABB(obj.boundingBox))
+                rightObjects ~= obj;
         }
     
-        BVHNode node = new BVHNode(tris);
+        BVHNode!T node = new BVHNode!T(objects);
 
-        if (tris.length <= maxObjectsPerNode)
+        if (objects.length <= maxObjectsPerNode)
             return node;
         
-        if (leftTris.length > 0 || rightTris.length > 0)
-            node.tris = [];
+        if (leftObjects.length > 0 || rightObjects.length > 0)
+            node.objects = [];
 
-        if (leftTris.length > 0)
-            node.child[0] = construct(leftTris, maxObjectsPerNode, splitHeuristic);
+        if (leftObjects.length > 0)
+            node.child[0] = construct(leftObjects, maxObjectsPerNode, splitHeuristic);
         else
             node.child[0] = null;
     
-        if (rightTris.length > 0)
-            node.child[1] = construct(rightTris, maxObjectsPerNode, splitHeuristic);
+        if (rightObjects.length > 0)
+            node.child[1] = construct(rightObjects, maxObjectsPerNode, splitHeuristic);
         else
             node.child[1] = null;
 
         return node;    
     }
 
-    SplitPlane getHalfMainAxisSplitPlane(ref Triangle[] tris, ref AABB box)
+    SplitPlane getHalfMainAxisSplitPlane(ref T[] objects, ref AABB box)
     {
         Axis axis = boxGetMainAxis(box);
         return boxGetSplitPlaneForAxis(box, axis);
     }
 
-    SplitPlane getSAHSplitPlane(ref Triangle[] tris, ref AABB box)
+    SplitPlane getSAHSplitPlane(ref T[] objects, ref AABB box)
     {
         Axis axis = boxGetMainAxis(box);
         
@@ -274,21 +272,21 @@ final class BVHTree
             SplitPlane SAHSplitPlane = SplitPlane(valueOfSplit, axis);
             auto boxes = boxSplitWithPlane(box, SAHSplitPlane);
 
-            uint leftTrisLength = 0;
-            uint rightTrisLength = 0;
+            uint leftObjectsLength = 0;
+            uint rightObjectsLength = 0;
 
-            foreach(tri; tris)
+            foreach(obj; objects)
             {
-                if (boxes[0].intersectsAABB(tri.boundingBox))
-                    leftTrisLength++;
-                else if (boxes[1].intersectsAABB(tri.boundingBox))
-                    rightTrisLength++;
+                if (boxes[0].intersectsAABB(obj.boundingBox))
+                    leftObjectsLength++;
+                else if (boxes[1].intersectsAABB(obj.boundingBox))
+                    rightObjectsLength++;
             }
 
-            if (leftTrisLength > 0 && rightTrisLength > 0)
+            if (leftObjectsLength > 0 && rightObjectsLength > 0)
             {
-                float SAHCost = getSAHCost(boxes[0], leftTrisLength, 
-                                           boxes[1], rightTrisLength, box);
+                float SAHCost = getSAHCost(boxes[0], leftObjectsLength, 
+                                           boxes[1], rightObjectsLength, box);
 
                 if (bestSAHCost.isNaN || SAHCost < bestSAHCost)
                 {

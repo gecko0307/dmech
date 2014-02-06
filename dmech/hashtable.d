@@ -28,25 +28,25 @@ DEALINGS IN THE SOFTWARE.
 
 module dmech.hashtable;
 
-class HashTable(T)
+class HashTable(T, K)
 {
     struct Entry(T)
     {
-        ulong key;
+        K key;
         T value;
         bool valid = false;
     }
 
-    const uint size;
+    const size_t size;
     Entry!(T)[] table;
 
-    this(uint size)
+    this(size_t size)
     {
         this.size = size;
         table = new Entry!(T)[size];
     }
 
-    T* get(ulong key)
+    T* get(K key)
     {
         uint hash = (key % size);
 
@@ -59,7 +59,7 @@ class HashTable(T)
             return &table[hash].value;
     }
 
-    void set(ulong key, T value)
+    void set(K key, T value)
     {
         uint hash = (key % size);
 
@@ -69,7 +69,7 @@ class HashTable(T)
         table[hash] = Entry!(T)(key, value, true);
     } 
 
-    void remove(ulong key)
+    void remove(K key)
     {
         uint hash = (key % size);
 
@@ -87,7 +87,6 @@ class HashTable(T)
         {
             if (entry.valid)
             {
-                //auto val = &entry.value;
                 result = func(entry.value);
                 if (result)
                     break;
@@ -103,9 +102,9 @@ ulong szudzikPair(uint a, uint b)
     return a >= b ? a * a + a + b : a + b * b;
 }
 
-class PairHashTable(T): HashTable!(T)
+class PairHashTable(T, K): HashTable!(T, K)
 {
-    this(uint size)
+    this(size_t size)
     {
         super(size);
     }
@@ -125,4 +124,3 @@ class PairHashTable(T): HashTable!(T)
         super.remove(szudzikPair(k1, k2));
     }
 }
-

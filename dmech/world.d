@@ -31,6 +31,7 @@ module dmech.world;
 import std.stdio;
 
 import dlib.math.vector;
+import dlib.math.matrix;
 import dlib.math.quaternion;
 import dlib.geometry.sphere;
 import dlib.geometry.triangle;
@@ -48,20 +49,26 @@ import dmech.mpr;
 
 class PhysicsWorld
 {
-    RigidBody[] bodies;
+    RigidBody[] staticBodies;
+    RigidBody[] dynamicBodies;
     Constraint[] constraints;
 
     Vector3f gravity;
 
     protected uint maxBodyId = 0;
 
-    enum MaxCollisions = 1000;
-    PairHashTable!ContactManifold manifolds;
+    //enum MaxCollisions = 1000;
+    PairHashTable!(ContactManifold, ulong) manifolds;
+
+    bool broadphase = false;
+
+    BVHTree!RigidBody bvh; 
     
-    this(Vector3f grav = Vector3f(0.0f, -9.80665f, 0.0f))
+    this(size_t maxCollisions = 1000)
     {
-        gravity = grav;
-        manifolds = new PairHashTable!ContactManifold(MaxCollisions);
+        gravity = Vector3f(0.0f, -9.80665f, 0.0f); // Earth
+
+        manifolds = new PairHashTable!(ContactManifold, ulong)(maxCollisions);
     }
 
     RigidBody addDynamicBody(Vector3f pos, float mass)
@@ -70,12 +77,20 @@ class PhysicsWorld
         b.position = pos;
         b.mass = mass;
         b.invMass = 1.0f / mass;
-        //b.inertia = b.mass;
-        //b.invInertia = 1.0f / b.inertia;
+        b.inertia = matrixf(
+            mass, 0, 0,
+            0, mass, 0,
+            0, 0, mass
+        );
+        b.invInertia = matrixf(
+            0, 0, 0,
+            0, 0, 0,
+            0, 0, 0
+        );
         b.dynamic = true;
         b.id = maxBodyId;
         maxBodyId++;
-        bodies ~= b;
+        dynamicBodies ~= b;
         return b;
     }
 
@@ -85,12 +100,20 @@ class PhysicsWorld
         b.position = pos;
         b.mass = float.infinity;
         b.invMass = 0.0f;
-        //b.inertia = float.infinity;
-        //b.invInertia = 0.0f;
+        b.inertia = matrixf(
+            float.infinity, 0, 0,
+            0, float.infinity, 0,
+            0, 0, float.infinity
+        );
+        b.invInertia = matrixf(
+            0, 0, 0,
+            0, 0, 0,
+            0, 0, 0
+        );
         b.dynamic = false;
         b.id = maxBodyId;
         maxBodyId++;
-        bodies ~= b;
+        staticBodies ~= b;
         return b;
     }
 
@@ -100,12 +123,17 @@ class PhysicsWorld
         return c;
     }
 
+    void buildStaticBVH()
+    {
+        bvh = new BVHTree!RigidBody(staticBodies, 16);
+    }
+
     void update(float dt)
     {
-        if (bodies.length == 0)
-            return;           
+        if (dynamicBodies.length == 0)
+            return;
 
-        foreach(b; bodies)
+        foreach(b; dynamicBodies)
         {
             b.updateInertia();
             b.applyForce(gravity * b.mass);
@@ -113,46 +141,95 @@ class PhysicsWorld
             b.resetForces();
         }
 
-        findCollisions(dt);
+        if (broadphase)
+            findDynamicCollisionsBroadphase();
+        else
+            findDynamicCollisionsBruteForce();
+
+        if (broadphase)
+            findStaticCollisionsBVH();
+        else
+            findStaticCollisionsBruteForce();
+
         solveCollisions(dt);
         solveConstraints(dt);
 
-        foreach(b; bodies)
+        foreach(b; dynamicBodies)
         {
             b.integrateVelocities(dt);
             b.updateGeometryTransformation();
         }
     }
 
-    void findCollisions(double dt)
+    void findDynamicCollisionsBruteForce()
     {
-        for (int i = 0; i < bodies.length - 1; i++)   
-        for (int j = i + 1; j < bodies.length; j++)
+        for (int i = 0; i < dynamicBodies.length - 1; i++)   
+        for (int j = i + 1; j < dynamicBodies.length; j++)
         {
-            Contact c;
-            if (checkCollision(bodies[i], bodies[j], c))
+            checkCollisionPair(dynamicBodies[i], dynamicBodies[j]);
+        }
+    }
+
+    void findDynamicCollisionsBroadphase()
+    {
+        for (int i = 0; i < dynamicBodies.length - 1; i++)   
+        for (int j = i + 1; j < dynamicBodies.length; j++)
+        {
+            if (dynamicBodies[i].geometry.boundingBox.intersectsAABB(dynamicBodies[j].geometry.boundingBox))
             {
-                auto m = manifolds.get(bodies[i].id, bodies[j].id);
-                if (m is null)
-                {
-                    ContactManifold m1;
-                    m1.computeContacts(c);
-                    manifolds.set(bodies[i].id, bodies[j].id, m1);
-                }
-                else
-                {
-                    m.computeContacts(c);
-                }
+                checkCollisionPair(dynamicBodies[i], dynamicBodies[j]);
+            }
+        }
+    }
+
+    void findStaticCollisionsBruteForce()
+    {
+        foreach(b1; dynamicBodies)
+        foreach(b2; staticBodies)
+        {
+            checkCollisionPair(b1, b2);
+        }
+    }
+
+    void findStaticCollisionsBVH()
+    {
+        foreach(b1; dynamicBodies)
+        {
+            auto bsphere = b1.geometry.boundingSphere;
+            bvh.root.traverseBySphere(bsphere, (ref RigidBody b2)
+            {
+                checkCollisionPair(b1, b2);
+            });
+        }
+    }
+
+    void checkCollisionPair(RigidBody body1, RigidBody body2)
+    {
+        Contact c;
+        if (checkCollision(body1, body2, c))
+        {
+            auto m = manifolds.get(body1.id, body2.id);
+            if (m is null)
+            {
+                ContactManifold m1;
+                m1.computeContacts(c);
+                manifolds.set(body1.id, body2.id, m1);
             }
             else
             {
-                manifolds.remove(bodies[i].id, bodies[j].id);
+                m.computeContacts(c);
             }
+        }
+        else
+        {
+            manifolds.remove(body1.id, body2.id);
         }
     }
 
     void solveCollisions(float dt)
     {
+        enum contactIterations = 10;
+
         foreach(ref m; manifolds)
         foreach(i; 0..m.numContacts)
         {
@@ -160,14 +237,13 @@ class PhysicsWorld
             prepareContact(c);
         }
 
-        foreach(iteration; 0..10)
+        foreach(iteration; 0..contactIterations)
         {
             foreach(ref m; manifolds)
             foreach(i; 0..m.numContacts)
             {
                 auto c = &m.contacts[i];
                 solveContact(c, dt, true);
-                //solvePositionError(c, dt);
             }
         }
     }
