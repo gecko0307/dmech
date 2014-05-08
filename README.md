@@ -7,15 +7,17 @@ Features
 Already implemented:
 * Impulse-based rigid body dynamics with iterative SI solver
 * Basic geometry shapes (sphere, box, cylinder, cone, ellipsoid)
-* Support for any convex shapes defined by support mapping
+* Support for any convex shape defined by support mapping
 * Muttiple geometries per body
-* Simple body constraints: distance, ball-socket, slider
+* Simple body constraints: distance and ball-socket
 * Persistent contact cache
 
 Planned in future:
 * More shapes (capsule, plane, convex hull, etc.)
-* Arbitrary static trimehes
-* Combined constraint types
+* Minkowski sum shape
+* Arbitrary static trimeshes
+* New constraint types
+* Force fields
 * Kinematic bodies
 * In long-term: vehicle engine, particles, soft-body physics
 
@@ -27,6 +29,4 @@ License
 -------
 Copyright (c) 2013 Timur Gafarov.
 Distributed under the Boost Software License, Version 1.0. (See accompanying file COPYING or at http://www.boost.org/LICENSE_1_0.txt)
-
-
 
