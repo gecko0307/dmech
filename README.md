@@ -8,11 +8,12 @@ Already implemented:
 * Impulse-based rigid body dynamics with iterative SI solver
 * Basic geometry shapes (sphere, box, cylinder, cone, ellipsoid)
 * Support for any convex shapes defined by support mapping
+* Muttiple geometries per body
 * Simple body constraints: distance, ball-socket, slider
+* Persistent contact cache
 
 Planned in future:
 * More shapes (capsule, plane, convex hull, etc.)
-* More than one geometry per body
 * Arbitrary static trimehes
 * Combined constraint types
 * Kinematic bodies

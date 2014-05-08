@@ -15,11 +15,13 @@ Add some bodies and apply geometries to them:
 
     // bGround - static box 40x40x1 m that acts as a ground plane
     RigidBody bGround = world.addStaticBody(Vector3f(0.0f, -1.0f, 0.0f));
-    bGround.setGeometry(new GeomBox(Vector3f(40.0f, 1.0f, 40.0f)));
+    Geometry gGround = new GeomBox(Vector3f(40.0f, 1.0f, 40.0f));
+    world.addShapeComponent(bGround, gGround, Vector3f(0.0f, 0.0f, 0.0f), 1.0f);
 
     // bSphere - dynamic sphere with radius of 1 m and mass of 1 kg 
-    RigidBody bSphere = world.addDynamicBody(Vector3f(0.0f, 2.0f, 0.0f), 1.0f);
-    bSphere.setGeometry(new GeomSphere(1.0f));
+    RigidBody bSphere = world.addDynamicBody(Vector3f(0.0f, 2.0f, 0.0f), 0.0f);
+    Geometry gSphere = new GeomSphere(1.0f);
+    world.addShapeComponent(bSphere, gSphere, Vector3f(0.0f, 0.0f, 0.0f), 1.0f);
 
 Now, whenever you want to update the world:
 
@@ -30,9 +32,9 @@ Now, whenever you want to update the world:
 Then, align your graphical objects to corresponding body matrices:
 
     Matrix4x4f m;
-    m = bGround.geometry.transformation;
+    m = bGround.shapes[0].transformation;
     myGround.setMatrix(m);
-    m = bSphere.geometry.transformation;
+    m = bSphere.shapes[0].transformation;
     mySphere.setMatrix(m);
 
 4x4 matrices are OpenGL-friendly. Layout is the following:
