@@ -1,5 +1,5 @@
 /*
-Copyright (c) 2013-2014 Timur Gafarov 
+Copyright (c) 2014 Timur Gafarov 
 
 Boost Software License - Version 1.0 - August 17th, 2003
 
@@ -26,49 +26,40 @@ ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
 DEALINGS IN THE SOFTWARE.
 */
 
-module dmech.contact;
+module dmech.pairhashtable;
 
-import dlib.math.vector;
+import dmech.hashtable;
 
-import dmech.rigidbody;
-import dmech.shape;
+/*
+ * Hash table that uses a pair of keys for indexing.
+ * Pair order matters: (a,b) != (b,a)
+ */
 
-struct Contact
+class PairHashTable(T): HashTable!(T, ulong)
 {
-    RigidBody body1;
-    RigidBody body2;
-    
-    ShapeComponent shape1;
-    ShapeComponent shape2;
-    
-    bool fact;
-
-    Vector3f point;
-    Vector3f shape1RelPoint;
-    Vector3f shape2RelPoint;
-
-    Vector3f normal;
-    float penetration;
-
-    Vector3f fdir1;
-    Vector3f fdir2;
-
-    float initialVelocityProjection;
-
-    float accumulatedImpulse = 0.0f;
-    float accumulatedfImpulse1 = 0.0f;
-    float accumulatedfImpulse2 = 0.0f;
-
-    void calcFDir()
+    this(size_t size)
     {
-        // Calculate tangent space for contact normal
-        if (dot(normal, Vector3f(1,0,0)) < 0.5f)
-            fdir1 = cross(normal, Vector3f(1,0,0)); 
-        else
-            fdir1 = cross(normal, Vector3f(0,0,1));
-        fdir2 = cross(fdir1, normal);
-        fdir1.normalize();
-        fdir2.normalize();
+        super(size);
     }
+
+    T* get(uint k1, uint k2)
+    {
+        return super.get(szudzikPair(k1, k2));
+    }
+
+    void set(uint k1, uint k2, T value)
+    {
+        super.set(szudzikPair(k1, k2), value);
+    }
+
+    void remove(uint k1, uint k2)
+    {
+        super.remove(szudzikPair(k1, k2));
+    }
+}
+
+ulong szudzikPair(uint a, uint b)
+{
+    return a >= b ? a * a + a + b : a + b * b;
 }
 

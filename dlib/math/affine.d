@@ -1,5 +1,5 @@
 /*
-Copyright (c) 2013-2014 Timur Gafarov 
+Copyright (c) 2013-2014 Timur Gafarov, Martin Cejp
 
 Boost Software License - Version 1.0 - August 17th, 2003
 
@@ -33,6 +33,7 @@ import std.math;
 import dlib.math.utils;
 import dlib.math.vector;
 import dlib.math.matrix;
+import dlib.math.quaternion;
 
 /*
  * Affine transformations
@@ -46,9 +47,64 @@ import dlib.math.matrix;
  * dlib uses 4x4 matrices to represent affine transformations.
  */
 
-// TODO: fromEuler
+/*
+ * Setup a rotation matrix, given Euler angles in radians
+ */
+Matrix!(T,4) fromEuler(T) (Vector!(T,3) v)
+{
+    auto res = Matrix!(T,4).identity;
 
-// TODO: toEuler
+    T cx = cos(v.x);
+    T sx = sin(v.x);
+    T cy = cos(v.y);
+    T sy = sin(v.y);
+    T cz = cos(v.z);
+    T sz = sin(v.z);
+
+    T sxsy = sx * sy;
+    T cxsy = cx * sy;
+
+    res.a11 =  (cy * cz);
+    res.a12 =  (sxsy * cz) + (cx * sz);
+    res.a13 = -(cxsy * cz) + (sx * sz);
+
+    res.a21 = -(cy * sz);
+    res.a22 = -(sxsy * sz) + (cx * cz);
+    res.a23 =  (cxsy * sz) + (sx * cz);
+
+    res.a31 =  (sy);
+    res.a32 = -(sx * cy);
+    res.a33 =  (cx * cy);
+
+    return res;
+}
+
+/*
+ * Setup the Euler angles in radians, given a rotation matrix
+ */
+Vector!(T,3) toEuler(T) (Matrix!(T,4) m)
+body
+{
+    Vector!(T,3) v;
+
+    v.y = asin(m.a31);
+
+    T cy = cos(v.y);
+    T oneOverCosY = 1.0 / cy;
+
+    if (fabs(cy) > 0.001)
+    {
+        v.x = atan2(-m.a32 * oneOverCosY, m.a33 * oneOverCosY);
+        v.z = atan2(-m.a21 * oneOverCosY, m.a11 * oneOverCosY);
+    }
+    else
+    {
+        v.x = 0.0;
+        v.z = atan2(m.a12, m.a22);
+    }
+
+    return v;
+}
 
 /*
  * Right vector of the matrix
@@ -252,40 +308,139 @@ body
     return res;
 }
 
-// TODO: reflectionMatrix
+/*
+ * Setup the matrix to perform a reflection about a plane parallel
+ * to a cardinal plane.
+ */
+Matrix!(T,4) reflectionMatrix(T) (Axis reflectionAxis, T k)
+body
+{
+    auto res = Matrix!(T,4).identity;
 
-// TODO: axisReflectionMatrix
+    switch (reflectionAxis)
+    {
+        case Axis.x:
+            res.a11 = -1.0; res.a21 =  0.0; res.a31 =  0.0; res.a41 = 2.0 * k;
+            res.a12 =  0.0; res.a22 =  1.0; res.a32 =  0.0; res.a42 = 0.0;
+            res.a13 =  0.0; res.a23 =  0.0; res.a33 =  1.0; res.a43 = 0.0;
+            break;
+
+        case Axis.y:
+            res.a11 =  1.0; res.a21 =  0.0; res.a31 =  0.0; res.a41 = 0.0;
+            res.a12 =  0.0; res.a22 = -1.0; res.a32 =  0.0; res.a42 = 2.0 * k;
+            res.a13 =  0.0; res.a23 =  0.0; res.a33 =  1.0; res.a43 = 0.0;
+            break;
+
+        case Axis.z:
+            res.a11 =  1.0; res.a21 =  0.0; res.a31 =  0.0; res.a41 = 0.0;
+            res.a12 =  0.0; res.a22 =  1.0; res.a32 =  0.0; res.a42 = 0.0;
+            res.a13 =  0.0; res.a23 =  0.0; res.a33 = -1.0; res.a43 = 2.0 * k;
+            break;
+
+        default:
+            assert(0);
+    }
+
+    return res;
+}
+
+/*
+ * Setup the matrix to perform a reflection about an arbitrary plane
+ * through the origin.  The unit vector n is perpendicular to the plane.
+ */
+Matrix!(T,4) axisReflectionMatrix(T) (Vector!(T,3) n)
+in
+{
+    assert (fabs(dot(n, n) - 1.0) < 0.001);
+}
+body
+{
+    auto res = Matrix!(T,4).identity;
+
+    T ax = -2.0 * n.x;
+    T ay = -2.0 * n.y;
+    T az = -2.0 * n.z;
+
+    res.a11 = 1.0 + (ax * n.x);
+    res.a22 = 1.0 + (ay * n.y);
+    res.a32 = 1.0 + (az * n.z);
+
+    res.a12 = res.a21 = (ax * n.y);
+    res.a13 = res.a31 = (ax * n.z);
+    res.a23 = res.a32 = (ay * n.z);
+
+    return res;
+}
 
 /*
  * Setup the matrix to perform a "Look At" transformation 
  * like a first person camera
  */
-Matrix!(T,4) lookAtMatrix(T) (Vector!(T,3) camPos, Vector!(T,3) target, Vector!(T,3) camUp)
+Matrix!(T,4) lookAtMatrix(T) (Vector!(T,3) eye, Vector!(T,3) center, Vector!(T,3) up)
 body
 {
-    auto rot = Matrix!(T,4).identity;
+    auto Result = Matrix!(T,4).identity;
 
-    Vector!(T,3) forward = (camPos - target).normalized;
-    Vector!(T,3) right = cross(camUp, forward).normalized;
-    Vector!(T,3) up = cross(forward, right).normalized;
-
-    rot.a11 = right.x;
-    rot.a21 = right.y;
-    rot.a31 = right.z;
-
-    rot.a12 = up.x;
-    rot.a22 = up.y;
-    rot.a32 = up.z;
-
-    rot.a13 = forward.x;
-    rot.a23 = forward.y;
-    rot.a33 = forward.z;
-
-    auto trans = translationMatrix(-camPos);
-    return (rot * trans);
+    auto f = (center - eye).normalized;
+    auto u = (up).normalized;
+    auto s = cross(f, u).normalized;
+    u = cross(s, f);
+    
+    Result[0,0] = s.x;
+    Result[0,1] = s.y;
+    Result[0,2] = s.z;
+    Result[1,0] = u.x;
+    Result[1,1] = u.y;
+    Result[1,2] = u.z;
+    Result[2,0] =-f.x;
+    Result[2,1] =-f.y;
+    Result[2,2] =-f.z;
+    Result[0,3] =-dot(s, eye);
+    Result[1,3] =-dot(u, eye);
+    Result[2,3] = dot(f, eye);
+    return Result;
 }
 
-// TODO: frustumMatrix
+/*
+ * Setup a frustum matrix given the left, right, bottom, top, near, and far
+ * values for the frustum boundaries.
+ */
+Matrix!(T,4) frustumMatrix(T) (T l, T r, T b, T t, T n, T f)
+in
+{
+    assert (n >= 0.0);
+    assert (f >= 0.0);
+}
+body
+{
+    auto res = Matrix!(T,4).identity;
+
+    T width  = r - l;
+    T height = t - b;
+    T depth  = f - n;
+
+    res.arrayof[0] = (2 * n) / width;
+    res.arrayof[1] = 0.0;
+    res.arrayof[2] = 0.0;
+    res.arrayof[3] = 0.0;
+
+    res.arrayof[4] = 0.0;
+    res.arrayof[5] = (2 * n) / height;
+    res.arrayof[6] = 0.0;
+    res.arrayof[7] = 0.0;
+
+    res.arrayof[8] = (r + l) / width;
+    res.arrayof[9] = (t + b) / height;
+    res.arrayof[10]= -(f + n) / depth;
+    res.arrayof[11]= -1.0;
+
+    res.arrayof[12]= 0.0;
+    res.arrayof[13]= 0.0;
+    res.arrayof[14]= -(2 * f * n) / depth;
+    res.arrayof[15]= 0.0;
+
+    return res;
+}
 
 /*
  * Setup a perspective matrix given the field-of-view in the Y direction
@@ -327,7 +482,41 @@ body
     return res;
 }
 
-// TODO: orthoMatrix
+/*
+ * Setup an orthographic Matrix4x4 given the left, right, bottom, top, near,
+ * and far values for the frustum boundaries.
+ */
+Matrix!(T,4) orthoMatrix(T) (T l, T r, T b, T t, T n, T f)
+body
+{
+    auto res = Matrix!(T,4).identity;
+
+    T width  = r - l;
+    T height = t - b;
+    T depth  = f - n;
+
+    res.arrayof[0] =  2.0 / width;
+    res.arrayof[1] =  0.0;
+    res.arrayof[2] =  0.0;
+    res.arrayof[3] =  0.0;
+
+    res.arrayof[4] =  0.0;
+    res.arrayof[5] =  2.0 / height;
+    res.arrayof[6] =  0.0;
+    res.arrayof[7] =  0.0;
+
+    res.arrayof[8] =  0.0;
+    res.arrayof[9] =  0.0;
+    res.arrayof[10]= -2.0 / depth;
+    res.arrayof[11]=  0.0;
+
+    res.arrayof[12]= -(r + l) / width;
+    res.arrayof[13]= -(t + b) / height;
+    res.arrayof[14]= -(f + n) / depth;
+    res.arrayof[15]=  1.0;
+
+    return res;
+}
 
 /*
  * Setup an orientation matrix using 3 basis normalized vectors
@@ -345,11 +534,88 @@ body
     return res;
 }
 
-// TODO: shadowMatrix
+/*
+ * Setup a matrix that flattens geometry into a plane, 
+ * as if it were casting a shadow from a light
+ */
+Matrix!(T,4) shadowMatrix(T) (Vector!(T,4) groundplane, Vector!(T,4) lightpos)
+{
+    T d = dot(groundplane, lightpos);
 
-// TODO: directionToMatrix
+    auto res = Matrix!(T,4).identity;
 
-// TODO: rotationBetweenVectors
+    res.a11 = d-lightpos.x * groundplane.x;
+    res.a12 =  -lightpos.x * groundplane.y;
+    res.a13 =  -lightpos.x * groundplane.z;
+    res.a14 =  -lightpos.x * groundplane.w;
+
+    res.a21 =  -lightpos.y * groundplane.x;
+    res.a22 = d-lightpos.y * groundplane.y;
+    res.a23 =  -lightpos.y * groundplane.z;
+    res.a24 =  -lightpos.y * groundplane.w;
+
+    res.a31 =  -lightpos.z * groundplane.x;
+    res.a32 =  -lightpos.z * groundplane.y;
+    res.a33 = d-lightpos.z * groundplane.z;
+    res.a34 =  -lightpos.z * groundplane.w;
+
+    res.a41 =  -lightpos.w * groundplane.x;
+    res.a42 =  -lightpos.w * groundplane.y;
+    res.a43 =  -lightpos.w * groundplane.z;
+    res.a44 = d-lightpos.w * groundplane.w;
+    
+    return res;
+}
+
+/*
+ * Setup an orientation matrix using forward direction vector
+ */
+Matrix!(T,4) directionToMatrix(T) (Vector!(T,3) zdir)
+{
+    Vector!(T,3) xdir = Vector!(T,3)(0, 0, 1);
+    Vector!(T,3) ydir;
+    float d = zdir.z;
+
+    if (d > -0.999999999 && d < 0.999999999)
+    {
+        xdir = xdir - zdir * d;
+        xdir.normalize();
+        ydir = cross(zdir, xdir);
+    }
+    else
+    {
+        xdir = Vector!(T,3)(zdir.z, 0, -zdir.x);
+        ydir = Vector!(T,3)(0, 1, 0);
+    }
+
+    auto m = Matrix!(T,4).identity;
+
+    m.a13 = zdir.x;
+    m.a23 = zdir.y;
+    m.a33 = zdir.z;
+
+    m.a11 = xdir.x;
+    m.a21 = xdir.y;
+    m.a31 = xdir.z;
+
+    m.a12 = ydir.x;
+    m.a22 = ydir.y;
+    m.a32 = ydir.z;
+
+    return m;
+}
+
+/*
+ * Setup an orientation matrix that performs rotation
+ * between two vectors 
+ *
+ * NOTE: currently this is just a shortcut 
+ * for dlib.math.quaternion.rotationBetween
+ */
+Matrix!(T,4) rotationBetweenVectors(T) (Vector!(T,3) source, Vector!(T,3) target)
+{
+    return rotationBetween(source, target).toMatrix4x4;
+}
 
 /*
  * Transformations in 2D space
@@ -364,21 +630,6 @@ body
     res.a21 = -s; res.a22 = c;
     return res;
 }
-
-// TODO: generalize for arbitrary dimension
-// TODO: probably move to dlib.math.vector
-Matrix!(T,2) tensorProduct(T) (Vector!(T,2) u, Vector!(T,2) v)
-body
-{
-    Matrix!(T,2) res;
-    res[0] = u[0] * v[0];
-    res[1] = u[1] * v[0];
-    res[2] = u[0] * v[1];
-    res[3] = u[1] * v[1];
-    return res;
-}
-
-alias tensorProduct outerProduct;
 
 unittest
 {

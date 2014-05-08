@@ -1,5 +1,5 @@
 /*
-Copyright (c) 2013 Timur Gafarov 
+Copyright (c) 2013-2014 Timur Gafarov 
 
 Boost Software License - Version 1.0 - August 17th, 2003
 
@@ -28,68 +28,63 @@ DEALINGS IN THE SOFTWARE.
 
 module dmech.world;
 
-import std.stdio;
-
 import dlib.math.vector;
 import dlib.math.matrix;
-import dlib.math.quaternion;
-import dlib.geometry.sphere;
-import dlib.geometry.triangle;
 
-import dmech.geometry;
 import dmech.rigidbody;
-import dmech.collision;
+import dmech.geometry;
+import dmech.shape;
 import dmech.contact;
-import dmech.manifold;
-import dmech.hashtable;
 import dmech.solver;
+import dmech.pairhashtable;
+import dmech.collision;
+import dmech.pcm;
 import dmech.constraint;
-import dmech.bvh;
-import dmech.mpr;
+//import dmech2.bvh;
 
-class PhysicsWorld
+class World
 {
     RigidBody[] staticBodies;
     RigidBody[] dynamicBodies;
     Constraint[] constraints;
 
     Vector3f gravity;
+    
+    protected uint maxShapeId = 1;
 
-    protected uint maxBodyId = 0;
-
-    //enum MaxCollisions = 1000;
-    PairHashTable!(ContactManifold, ulong) manifolds;
+    PairHashTable!PersistentContactManifold manifolds;
 
     bool broadphase = false;
+    bool warmstart = false;
 
-    BVHTree!RigidBody bvh; 
-    
+    uint contactIterations = 12;
+    uint positionCorrectionIterations = 5;
+    uint constraintIterations = 5;
+
     this(size_t maxCollisions = 1000)
     {
         gravity = Vector3f(0.0f, -9.80665f, 0.0f); // Earth
 
-        manifolds = new PairHashTable!(ContactManifold, ulong)(maxCollisions);
+        manifolds = new PairHashTable!PersistentContactManifold(maxCollisions);
     }
 
-    RigidBody addDynamicBody(Vector3f pos, float mass)
+    RigidBody addDynamicBody(Vector3f pos, float mass = 0.0f)
     {
         auto b = new RigidBody();
         b.position = pos;
         b.mass = mass;
         b.invMass = 1.0f / mass;
-        b.inertia = matrixf(
+        b.inertiaTensor = matrixf(
             mass, 0, 0,
             0, mass, 0,
             0, 0, mass
         );
-        b.invInertia = matrixf(
+        b.invInertiaTensor = matrixf(
             0, 0, 0,
             0, 0, 0,
             0, 0, 0
         );
         b.dynamic = true;
-        b.id = maxBodyId;
-        maxBodyId++;
         dynamicBodies ~= b;
         return b;
     }
@@ -100,21 +95,28 @@ class PhysicsWorld
         b.position = pos;
         b.mass = float.infinity;
         b.invMass = 0.0f;
-        b.inertia = matrixf(
+        b.inertiaTensor = matrixf(
             float.infinity, 0, 0,
             0, float.infinity, 0,
             0, 0, float.infinity
         );
-        b.invInertia = matrixf(
+        b.invInertiaTensor = matrixf(
             0, 0, 0,
             0, 0, 0,
             0, 0, 0
         );
         b.dynamic = false;
-        b.id = maxBodyId;
-        maxBodyId++;
         staticBodies ~= b;
         return b;
+    }
+
+    ShapeComponent addShapeComponent(RigidBody b, Geometry geom, Vector3f position, float mass)
+    {
+        auto shape = new ShapeComponent(geom, position, mass);
+        shape.id = maxShapeId;
+        maxShapeId++;
+        b.addShapeComponent(shape);
+        return shape;
     }
 
     Constraint addConstraint(Constraint c)
@@ -123,15 +125,15 @@ class PhysicsWorld
         return c;
     }
 
-    void buildStaticBVH()
-    {
-        bvh = new BVHTree!RigidBody(staticBodies, 16);
-    }
-
-    void update(float dt)
+    void update(double dt)
     {
         if (dynamicBodies.length == 0)
             return;
+
+        foreach(ref m; manifolds)
+        {
+            m.update();
+        }
 
         foreach(b; dynamicBodies)
         {
@@ -146,95 +148,133 @@ class PhysicsWorld
         else
             findDynamicCollisionsBruteForce();
 
-        if (broadphase)
-            findStaticCollisionsBVH();
-        else
-            findStaticCollisionsBruteForce();
+        findStaticCollisionsBruteForce();
 
-        solveCollisions(dt);
+        solveCollisions();
         solveConstraints(dt);
 
         foreach(b; dynamicBodies)
         {
             b.integrateVelocities(dt);
-            b.updateGeometryTransformation();
+        }
+
+        foreach(iteration; 0..positionCorrectionIterations)
+        foreach(ref m; manifolds)
+        foreach(i; 0..m.numContacts)
+        {
+            auto c = &m.contacts[i];
+            solvePositionError(c, m.numContacts);
+        }
+
+        foreach(b; dynamicBodies)
+        {
+            b.integratePseudoVelocities(dt);
+            b.updateShapeComponents();
         }
     }
 
     void findDynamicCollisionsBruteForce()
     {
         for (int i = 0; i < dynamicBodies.length - 1; i++)   
-        for (int j = i + 1; j < dynamicBodies.length; j++)
         {
-            checkCollisionPair(dynamicBodies[i], dynamicBodies[j]);
+            auto body1 = dynamicBodies[i];
+            foreach(shape1; body1.shapes)
+            {
+                for (int j = i + 1; j < dynamicBodies.length; j++)
+                {
+                    auto body2 = dynamicBodies[j];
+                    foreach(shape2; body2.shapes)
+                    {
+                        Contact c;
+                        c.body1 = body1;
+                        c.body2 = body2;
+                        checkCollisionPair(shape1, shape2, c);
+                    }
+                }
+            }
         }
     }
 
     void findDynamicCollisionsBroadphase()
     {
         for (int i = 0; i < dynamicBodies.length - 1; i++)   
-        for (int j = i + 1; j < dynamicBodies.length; j++)
         {
-            if (dynamicBodies[i].geometry.boundingBox.intersectsAABB(dynamicBodies[j].geometry.boundingBox))
+            auto body1 = dynamicBodies[i];
+            foreach(shape1; body1.shapes)
             {
-                checkCollisionPair(dynamicBodies[i], dynamicBodies[j]);
+                for (int j = i + 1; j < dynamicBodies.length; j++)
+                {
+                    auto body2 = dynamicBodies[j];
+                    foreach(shape2; body2.shapes)
+                    if (shape1.boundingBox.intersectsAABB(shape2.boundingBox))
+                    {
+                        Contact c;
+                        c.body1 = body1;
+                        c.body2 = body2;
+                        checkCollisionPair(shape1, shape2, c);
+                    }
+                }
             }
         }
     }
 
     void findStaticCollisionsBruteForce()
     {
-        foreach(b1; dynamicBodies)
-        foreach(b2; staticBodies)
+        foreach(body1; dynamicBodies)
         {
-            checkCollisionPair(b1, b2);
-        }
-    }
-
-    void findStaticCollisionsBVH()
-    {
-        foreach(b1; dynamicBodies)
-        {
-            auto bsphere = b1.geometry.boundingSphere;
-            bvh.root.traverseBySphere(bsphere, (ref RigidBody b2)
+            foreach(shape1; body1.shapes)
             {
-                checkCollisionPair(b1, b2);
-            });
+                foreach(body2; staticBodies)
+                {
+                    foreach(shape2; body2.shapes)
+                    {
+                        Contact c;
+                        c.body1 = body1;
+                        c.body2 = body2;
+                        checkCollisionPair(shape1, shape2, c);
+                    }
+                }
+            }
         }
     }
 
-    void checkCollisionPair(RigidBody body1, RigidBody body2)
+    void checkCollisionPair(ShapeComponent shape1, ShapeComponent shape2, ref Contact c)
     {
-        Contact c;
-        if (checkCollision(body1, body2, c))
+        if (checkCollision(shape1, shape2, c))
         {
-            auto m = manifolds.get(body1.id, body2.id);
+            c.shape1RelPoint = c.point - shape1.position;
+            c.shape2RelPoint = c.point - shape2.position;
+            c.shape1 = shape1;
+            c.shape2 = shape2;
+            c.calcFDir();
+
+            auto m = manifolds.get(shape1.id, shape2.id);
             if (m is null)
             {
-                ContactManifold m1;
-                m1.computeContacts(c);
-                manifolds.set(body1.id, body2.id, m1);
+                PersistentContactManifold m1;
+                m1.addContact(c);
+                //m1.computeContacts(c);
+                manifolds.set(shape1.id, shape2.id, m1);
             }
             else
             {
-                m.computeContacts(c);
+                m.addContact(c);
+                //m.computeContacts(c);
             }
         }
         else
         {
-            manifolds.remove(body1.id, body2.id);
+            manifolds.remove(shape1.id, shape2.id);
         }
     }
 
-    void solveCollisions(float dt)
+    void solveCollisions()
     {
-        enum contactIterations = 10;
-
         foreach(ref m; manifolds)
         foreach(i; 0..m.numContacts)
         {
             auto c = &m.contacts[i];
-            prepareContact(c);
+            prepareContact(c, warmstart);
         }
 
         foreach(iteration; 0..contactIterations)
@@ -243,14 +283,13 @@ class PhysicsWorld
             foreach(i; 0..m.numContacts)
             {
                 auto c = &m.contacts[i];
-                solveContact(c, dt, true);
+                solveContact(c, warmstart);
             }
         }
     }
 
-    void solveConstraints(float dt)
+    void solveConstraints(double dt)
     {
-        enum constraintIterations = 5;
         foreach(c; constraints)
         {
             c.prepare(dt);

@@ -1,5 +1,5 @@
 /*
-Copyright (c) 2013 Timur Gafarov 
+Copyright (c) 2013-2014 Timur Gafarov 
 
 Boost Software License - Version 1.0 - August 17th, 2003
 
@@ -28,19 +28,20 @@ DEALINGS IN THE SOFTWARE.
 
 module dmech.collision;
 
-import dmech.geometry;
-import dmech.rigidbody;
+import dmech.shape;
 import dmech.contact;
 import dmech.mpr;
 
-// TODO: sphere/sphere collision is a simple case,
-// use a special routine for it, instead of MPR.
-bool checkCollision(RigidBody body1, RigidBody body2, ref Contact c)
+/*
+ * TODO: sphere/sphere collision is a simple case,
+ * use a special routine for it, instead of MPR.
+ */
+bool checkCollision(ShapeComponent shape1, ShapeComponent shape2, ref Contact c)
 {
-    c.body1 = body1;
-    c.body2 = body2;
+    c.shape1 = shape1;
+    c.shape2 = shape2;
 
-    bool collided = MPRCollisionTest(body1.geometry, body2.geometry, c);
+    bool collided = MPRCollisionTest(shape1, shape2, c);
 
     if (collided)
         c.fact = true;

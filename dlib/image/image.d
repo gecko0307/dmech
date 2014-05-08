@@ -1,5 +1,5 @@
 /*
-Copyright (c) 2011-2013 Timur Gafarov 
+Copyright (c) 2011-2014 Timur Gafarov 
 
 Boost Software License - Version 1.0 - August 17th, 2003
 
@@ -30,9 +30,11 @@ module dlib.image.image;
 
 private
 {
+    import std.math;
     import std.conv;
     import dlib.functional.range;
     import dlib.math.vector;
+    import dlib.math.interpolation;
     import dlib.image.color;
 }
 
@@ -65,19 +67,28 @@ abstract class SuperImage
     Color4f opIndexAssign(Color4f c, int x, int y);
 
     SuperImage createSameFormat(uint w, uint h);
-
-    @property float progress();
-    void updateProgress();
-    void resetProgress();
     
-    @property auto row()
+    final @property auto row()
     {
         return range!uint(0, width);
     }
     
-    @property auto col()
+    final @property auto col()
     {
         return range!uint(0, height);
+    }
+
+    float pixelCost = 0.0f;
+    shared float progress = 0.0f;
+    
+    final void updateProgress()
+    {
+        progress += pixelCost;
+    }
+    
+    final void resetProgress()
+    {
+        progress = 0.0f;
     }
 }
 
@@ -154,8 +165,8 @@ class Image(PixelFormat fmt): SuperImage
         _pixelSize = (_bitDepth / 8) * _channels;
         _data = new ubyte[_width * _height * _pixelSize];
         
-        _pixelCost = 1.0f / (_width * _height);
-        _progress = 0.0f;
+        pixelCost = 1.0f / (_width * _height);
+        progress = 0.0f;
     }
 
     private Color4 getPixel(int x, int y)
@@ -301,21 +312,6 @@ class Image(PixelFormat fmt): SuperImage
         setPixel(c.convert(_bitDepth), x, y);
         return c;
     }
-   
-    override @property float progress()
-    {
-        return _progress;
-    }
-    
-    override void updateProgress()
-    {
-        _progress += _pixelCost;
-    }
-    
-    override void resetProgress()
-    {
-        _progress = 0.0f;
-    }
 
     protected:
 
@@ -325,9 +321,6 @@ class Image(PixelFormat fmt): SuperImage
     uint _channels;
     uint _pixelSize;
     ubyte[] _data;
-    
-    float _pixelCost;
-    shared float _progress;
 }
 
 alias Image!(PixelFormat.L8) ImageL8;
@@ -397,4 +390,27 @@ T convert(T)(SuperImage img)
         res[x, y] = img[x, y];
     return res;
 }
+
+/*
+ * Get interpolated pixel value from an image
+ */
+Color4f bilinearPixel(SuperImage img, float x, float y)
+{
+    real intX;
+    real fracX = modf(x, intX);
+    real intY;
+    real fracY = modf(y, intY);
+
+    Color4f c1 = img[cast(int)intX, cast(int)intY];
+    Color4f c2 = img[cast(int)(intX + 1.0f), cast(int)intY];
+    Color4f c3 = img[cast(int)(intX + 1.0f), cast(int)(intY + 1.0f)];
+    Color4f c4 = img[cast(int)intX, cast(int)(intY + 1.0f)];
+
+    Color4f ic1 = lerp(c1, c2, fracX);
+    Color4f ic2 = lerp(c4, c3, fracX);
+    Color4f ic3 = lerp(ic1, ic2, fracY);
+
+    return ic3;
+}
+
 

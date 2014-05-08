@@ -1,5 +1,5 @@
 /*
-Copyright (c) 2013 Timur Gafarov 
+Copyright (c) 2013-2014 Timur Gafarov 
 
 Boost Software License - Version 1.0 - August 17th, 2003
 
@@ -94,33 +94,5 @@ class HashTable(T, K)
         }
 
         return result;
-    }
-}
-
-ulong szudzikPair(uint a, uint b)
-{
-    return a >= b ? a * a + a + b : a + b * b;
-}
-
-class PairHashTable(T, K): HashTable!(T, K)
-{
-    this(size_t size)
-    {
-        super(size);
-    }
-
-    T* get(uint k1, uint k2)
-    {
-        return super.get(szudzikPair(k1, k2));
-    }
-
-    void set(uint k1, uint k2, T value)
-    {
-        super.set(szudzikPair(k1, k2), value);
-    }
-
-    void remove(uint k1, uint k2)
-    {
-        super.remove(szudzikPair(k1, k2));
     }
 }

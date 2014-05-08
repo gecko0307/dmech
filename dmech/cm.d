@@ -1,5 +1,5 @@
 /*
-Copyright (c) 2013 Timur Gafarov 
+Copyright (c) 2013-2014 Timur Gafarov 
 
 Boost Software License - Version 1.0 - August 17th, 2003
 
@@ -26,7 +26,7 @@ ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
 DEALINGS IN THE SOFTWARE.
 */
 
-module dmech.manifold;
+module dmech.cm;
 
 import std.math;
 
@@ -40,6 +40,7 @@ import dlib.geometry.triangle;
 import dmech.contact;
 import dmech.rigidbody;
 import dmech.geometry;
+import dmech.shapecomp;
 import dmech.mpr;
 import dmech.clipping;
 
@@ -87,7 +88,9 @@ Vector3f unprojectPoint(
 
 /*
  * Contact manifold.
- * Stores information about two bodies' collision
+ * Stores information about two bodies' collision.
+ * Contacts are generated at once using axis rotation method
+ * (for incremental solution see pcm.d).
  */
 struct ContactManifold
 {
@@ -116,8 +119,8 @@ struct ContactManifold
         n1.normalize();
 
         // If colliding with a sphere, there's only one contact
-        if (c.body1.geometry.type == GeomType.Sphere ||
-            c.body2.geometry.type == GeomType.Sphere)
+        if (c.shape1.geometry.type == GeomType.Sphere ||
+            c.shape2.geometry.type == GeomType.Sphere)
         {
             contacts[0] = c;
             contacts[0].fdir1 = n0;
@@ -126,8 +129,8 @@ struct ContactManifold
             return;
         }
 
-        if (c.body1.geometry.type == GeomType.Ellipsoid ||
-            c.body2.geometry.type == GeomType.Ellipsoid)
+        if (c.shape1.geometry.type == GeomType.Ellipsoid ||
+            c.shape2.geometry.type == GeomType.Ellipsoid)
         {
             contacts[0] = c;
             contacts[0].fdir1 = n0;
@@ -150,14 +153,14 @@ struct ContactManifold
         float eps = 0.05f;
         
         // If colliding with a cylinder, use smaller contact area
-        if (c.body1.geometry.type == GeomType.Cylinder ||
-            c.body2.geometry.type == GeomType.Cylinder)
+        if (c.shape1.geometry.type == GeomType.Cylinder ||
+            c.shape2.geometry.type == GeomType.Cylinder)
         {
             eps = 0.01f;
         }
 
-        if (c.body1.geometry.type == GeomType.Cone ||
-            c.body2.geometry.type == GeomType.Cone)
+        if (c.shape1.geometry.type == GeomType.Cone ||
+            c.shape2.geometry.type == GeomType.Cone)
         {
             eps = 0.01f;
         }
@@ -167,7 +170,7 @@ struct ContactManifold
 
         uint numAxes1 = 4;
 
-        if (c.body1.geometry.type == GeomType.Triangle)
+        if (c.shape1.geometry.type == GeomType.Triangle)
         {
             numAxes1 = 3;
             startAng = 0;
@@ -182,7 +185,7 @@ struct ContactManifold
             
             Vector3f p;
 
-            supportTransformed(c.body1.geometry, -axis, p);
+            supportTransformed(c.shape1, -axis, p);
             
             if (contactPlane.distance(p) < 0.0f)
             {
@@ -194,7 +197,7 @@ struct ContactManifold
 
         uint numAxes2 = 4;
 
-        if (c.body2.geometry.type == GeomType.Triangle)
+        if (c.shape2.geometry.type == GeomType.Triangle)
         {
             numAxes2 = 3;
             startAng = 0;
@@ -209,7 +212,7 @@ struct ContactManifold
             
             Vector3f p;
 
-            supportTransformed(c.body2.geometry, axis, p);
+            supportTransformed(c.shape2, axis, p);
             if (contactPlane.distance(p) > 0.0f)
             {
                 Vector2f planePoint = projectPoint(p, c.point, right, up);
@@ -230,6 +233,8 @@ struct ContactManifold
             newc.fact = true;
             newc.body1 = c.body1;
             newc.body2 = c.body2;
+            newc.shape1 = c.shape1;
+            newc.shape2 = c.shape2;
             newc.point = unprojectPoint(pts[i], c.point, right, up);
             newc.normal = c.normal;
             newc.penetration = c.penetration;
@@ -277,6 +282,8 @@ struct ContactManifold
                 if (distance(p1, p2) < 0.1f)
                 {
                     res[resNum] = contacts[i];
+                    res[resNum].shape1 = newManifold[j].shape1;
+                    res[resNum].shape2 = newManifold[j].shape2;
                     res[resNum].body1 = newManifold[j].body1;
                     res[resNum].body2 = newManifold[j].body2;
                     res[resNum].point = p2; //(p1 + p2) * 0.5f;

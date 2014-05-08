@@ -1,5 +1,5 @@
 /*
-Copyright (c) 2013 Timur Gafarov 
+Copyright (c) 2013-2014 Timur Gafarov 
 
 Boost Software License - Version 1.0 - August 17th, 2003
 
@@ -32,208 +32,88 @@ import std.math;
 
 import dlib.math.vector;
 import dlib.math.matrix;
-import dlib.math.affine;
 import dlib.math.quaternion;
+import dlib.math.affine;
 import dlib.math.utils;
 
-import dlib.geometry.aabb;
-
-import dmech.geometry;
-
-/*
- * Absolute rigid body class
- */
+//import dmech.geometry;
+import dmech.shape;
 
 class RigidBody
 {
     Vector3f position;
     Quaternionf orientation;
-    
-    float damping;
-    float mass;
-    float invMass;
-    
-    //float inertia;
-    //float invInertia;
-    Matrix3x3f inertia;
-    Matrix3x3f invInertia;
-    
+
     Vector3f linearVelocity;
     Vector3f angularVelocity;
-    
+
     Vector3f pseudoLinearVelocity;
     Vector3f pseudoAngularVelocity;
     
     Vector3f linearAcceleration;
     Vector3f angularAcceleration;
-    
+
+    float mass;
+    float invMass;
+
+    Matrix3x3f inertiaTensor;
+    Matrix3x3f invInertiaTensor; //TODO: rename to invInertiaWorld
+
+    Vector3f centerOfMass;
+
     Vector3f forceAccumulator;
     Vector3f torqueAccumulator;
 
     float bounce;
     float friction;
 
-    Geometry geometry;
+    ShapeComponent[] shapes;
 
     bool dynamic;
 
-    uint id;
+    float damping = 0.5f;
+    float stopThreshold = 0.15f; //0.15f;
+    float stopThresholdPV = 0.01f;
 
-    enum VelocityThreshold = 0.04f;
-    
     this()
     {
         position = Vector3f(0.0f, 0.0f, 0.0f);
         orientation = Quaternionf(0.0f, 0.0f, 0.0f, 1.0f);
-    
-        damping = 0.5f;
-    
-        mass = 1.0f;
-        invMass = 1.0f;
-    
-        //inertia = 1.0f;
-        //invInertia = 1.0f;
-    
+
         linearVelocity = Vector3f(0.0f, 0.0f, 0.0f);
         angularVelocity = Vector3f(0.0f, 0.0f, 0.0f);
-    
+
         pseudoLinearVelocity = Vector3f(0.0f, 0.0f, 0.0f);
         pseudoAngularVelocity = Vector3f(0.0f, 0.0f, 0.0f);
     
         linearAcceleration = Vector3f(0.0f, 0.0f, 0.0f);
         angularAcceleration = Vector3f(0.0f, 0.0f, 0.0f);
-    
+
+        mass = 1.0f;
+        invMass = 1.0f;
+
+        inertiaTensor = matrixf(
+            mass, 0, 0,
+            0, mass, 0,
+            0, 0, mass
+        );
+        invInertiaTensor = matrixf(
+            0, 0, 0,
+            0, 0, 0,
+            0, 0, 0
+        );
+
+        centerOfMass = Vector3f(0.0f, 0.0f, 0.0f);
+
         forceAccumulator = Vector3f(0.0f, 0.0f, 0.0f);
         torqueAccumulator = Vector3f(0.0f, 0.0f, 0.0f);
 
-        friction = 0.9f;
         bounce = 0.5f;
-
-        geometry = null;
+        friction = 0.9f;
 
         dynamic = true;
-
-        id = 0;
-    }
-    
-    void integrateForces(float dt)
-    {
-        if (!dynamic)
-            return;
-            
-        linearAcceleration = forceAccumulator * invMass;
-        angularAcceleration = torqueAccumulator * invInertia;
-        
-        linearVelocity += linearAcceleration * dt;
-        angularVelocity += angularAcceleration * dt;
-    }
-    
-    void integrateVelocities(float dt)
-    {
-        if (!dynamic)
-            return;
-
-        linearVelocity *= clamp(1.0f - dt * damping, 0.0f, 1.0f);
-        angularVelocity *= clamp(1.0f - dt * damping, 0.0f, 1.0f);
-        
-        if (linearVelocity.length < VelocityThreshold)
-            linearVelocity = Vector3f(0.0f, 0.0f, 0.0f);
-        if (angularVelocity.length < VelocityThreshold)
-            angularVelocity = Vector3f(0.0f, 0.0f, 0.0f);
-        
-        position += linearVelocity * dt;
-        orientation += 0.5f * Quaternionf(angularVelocity, 0.0f) * orientation * dt;
-        orientation.normalize();
-        
-        position += pseudoLinearVelocity * dt;
-        orientation += 0.5f * Quaternionf(pseudoAngularVelocity, 0.0f) * orientation * dt;
-        orientation.normalize();
-        
-        pseudoLinearVelocity = Vector3f(0.0f, 0.0f, 0.0f);
-        pseudoAngularVelocity = Vector3f(0.0f, 0.0f, 0.0f);
     }
 
-    void resetForces()
-    {
-        forceAccumulator = Vector3f(0.0f, 0.0f, 0.0f);
-        torqueAccumulator = Vector3f(0.0f, 0.0f, 0.0f);
-    }
-
-    void setGeometry(Geometry geom)
-    {
-        geometry = geom;
-        if (dynamic)
-        {
-            inertia = geom.inertiaTensor(mass);
-            invInertia = inertia.inverse;
-        }
-        else
-        {
-            inertia = matrixf(
-                float.infinity, 0, 0,
-                0, float.infinity, 0,
-                0, 0, float.infinity
-            );
-            invInertia = matrixf(
-                0, 0, 0,
-                0, 0, 0,
-                0, 0, 0
-            );
-        }
-        updateGeometryTransformation();
-    }
-
-    void updateInertia()
-    {
-        if (dynamic)
-        {
-            auto m = orientation.toMatrix3x3;
-            invInertia = (m * inertia * m.transposed).inverse;
-        }
-    }
-
-    void updateGeometryTransformation()
-    {
-        if (geometry !is null)
-            geometry.transformation = transformation();
-    }
-    
-    void applyForce(Vector3f force)
-    {
-        if (!dynamic)
-            return;
-
-        forceAccumulator += force;
-    }
-   
-    void applyTorque(Vector3f torque)
-    {
-        if (!dynamic)
-            return;
-
-        torqueAccumulator += torque;
-    }
-    
-    void applyImpulse(Vector3f impulse, Vector3f point)
-    {
-        if (!dynamic)
-            return;
-
-        linearVelocity += impulse * invMass;
-        Vector3f angularImpulse = cross(point - position, impulse);
-        angularVelocity += angularImpulse * invInertia;
-    }
-    
-    void applyPseudoImpulse(Vector3f impulse, Vector3f point)
-    {
-        if (!dynamic)
-            return;
-
-        pseudoLinearVelocity += impulse * invMass;
-        Vector3f angularImpulse = cross(point - position, impulse);
-        pseudoAngularVelocity += angularImpulse * invInertia;
-    }
-    
     Matrix4x4f transformation()
     {
         Matrix4x4f t;
@@ -242,9 +122,185 @@ class RigidBody
         return t;
     }
 
-    @property AABB boundingBox()
+    void addShapeComponent(ShapeComponent shape)
     {
-        return geometry.boundingBox;
+        shape.transformation = transformation() * translationMatrix(shape.centroid);
+        shapes ~= shape;
+
+        if (!dynamic)
+            return;
+
+        centerOfMass = Vector3f(0, 0, 0);
+        float m = 0;
+
+        foreach (sh; shapes)
+        {
+            m += sh.mass;
+            centerOfMass += sh.mass * sh.centroid;
+        }
+
+        float invm = 1.0f / m;
+        centerOfMass *= invm;
+
+        mass = m;
+        invMass = invm;
+
+        // Compute inertia tensor using Huygens-Steiner theorem
+        inertiaTensor = Matrix3x3f.zero;
+        foreach (sh; shapes)
+        {
+            Vector3f r = centerOfMass - sh.centroid;
+            inertiaTensor += 
+                sh.inertiaTensor(sh.mass) + 
+                (Matrix3x3f.identity * dot(r, r) - tensorProduct(r, r)) * sh.mass;
+        }
+
+        invInertiaTensor = inertiaTensor.inverse;
+    }
+
+    void integrateForces(float dt)
+    {
+        if (!dynamic)
+            return;
+
+        linearAcceleration = forceAccumulator * invMass;
+        angularAcceleration = torqueAccumulator * invInertiaTensor;
+        
+        linearVelocity += linearAcceleration * dt;
+        angularVelocity += angularAcceleration * dt;
+    }
+
+    void integrateVelocities(float dt)
+    {
+        if (!dynamic)
+            return;
+
+        linearVelocity *= clamp(1.0f - dt * damping, 0.0f, 1.0f);
+        angularVelocity *= clamp(1.0f - dt * damping, 0.0f, 1.0f);
+
+        if (linearVelocity.length > stopThreshold)
+        {
+            position += linearVelocity * dt;
+            position += pseudoLinearVelocity * dt;
+        }
+        if (angularVelocity.length > stopThreshold)
+        {
+            orientation += 0.5f * Quaternionf(angularVelocity, 0.0f) * orientation * dt;
+            orientation.normalize();
+            orientation += 0.5f * Quaternionf(pseudoAngularVelocity, 0.0f) * orientation * dt;
+            orientation.normalize();
+        }
+
+        pseudoLinearVelocity = Vector3f(0.0f, 0.0f, 0.0f);
+        pseudoAngularVelocity = Vector3f(0.0f, 0.0f, 0.0f);
+    }
+
+    void integratePseudoVelocities(float dt)
+    {
+        if (!dynamic)
+            return;
+
+        pseudoLinearVelocity *= clamp(1.0f - dt * damping, 0.0f, 1.0f);
+        pseudoAngularVelocity *= clamp(1.0f - dt * damping, 0.0f, 1.0f);
+
+        if (pseudoLinearVelocity.length > stopThresholdPV)
+        {
+            position += pseudoLinearVelocity;
+        }
+        if (pseudoAngularVelocity.length > stopThresholdPV)
+        {
+            orientation += 0.5f * Quaternionf(pseudoAngularVelocity, 0.0f) * orientation;
+            orientation.normalize();
+        }
+
+        pseudoLinearVelocity = Vector3f(0.0f, 0.0f, 0.0f);
+        pseudoAngularVelocity = Vector3f(0.0f, 0.0f, 0.0f);
+    }
+
+    @property Vector3f worldCenterOfMass()
+    {
+        return position + orientation.rotate(centerOfMass);
+    }
+
+    void updateInertia()
+    {
+        if (dynamic)
+        {
+            auto rot = orientation.toMatrix3x3;
+            invInertiaTensor = (rot * inertiaTensor * rot.transposed).inverse;
+        }
+    }
+
+    void updateShapeComponents()
+    {
+        foreach (sh; shapes)
+        {
+            sh.transformation = transformation() * translationMatrix(sh.centroid);
+        }
+    }
+
+    void resetForces()
+    {
+        forceAccumulator = Vector3f(0, 0, 0);
+        torqueAccumulator = Vector3f(0, 0, 0);
+    }
+
+    void applyForce(Vector3f force)
+    {
+        if (!dynamic)
+            return;
+
+        forceAccumulator += force;
+    }
+
+    void applyTorque(Vector3f torque)
+    {
+        if (!dynamic)
+            return;
+
+        torqueAccumulator += torque;
+    }
+
+    void applyImpulse(Vector3f impulse, Vector3f point)
+    {
+        if (!dynamic)
+            return;
+
+        assert(!isnan(impulse.x));
+
+        linearVelocity += impulse * invMass;
+        Vector3f angularImpulse = cross(point - worldCenterOfMass, impulse);
+        angularVelocity += angularImpulse * invInertiaTensor;
+    }
+
+    void applyPseudoImpulse(Vector3f impulse, Vector3f point)
+    {
+        if (!dynamic)
+            return;
+
+        pseudoLinearVelocity += impulse * invMass;
+        Vector3f angularImpulse = cross(point - worldCenterOfMass, impulse);
+        pseudoAngularVelocity += angularImpulse * invInertiaTensor;
+    }
+    
+    @property float linearKineticEnergy()
+    {
+        if (!dynamic)
+            return float.infinity;
+
+        // 0.5 * m * v^2
+        float v = linearVelocity.length;
+        return 0.5f * mass * v * v;
+    }
+    
+    @property float angularKineticEnergy()
+    {
+        if (!dynamic)
+            return float.infinity;
+
+        // 0.5 * w * I * w
+        Vector3f w = angularVelocity;
+        return 0.5f * dot(w * inertiaTensor, w);
     }
 }
 

@@ -1,5 +1,5 @@
 /*
-Copyright (c) 2011-2013 Timur Gafarov 
+Copyright (c) 2011-2014 Timur Gafarov 
 
 Boost Software License - Version 1.0 - August 17th, 2003
 
@@ -47,7 +47,11 @@ public:
 struct Vector(T, int size)
 {
     public:
-    
+
+   /* 
+    * Vector constructor
+    * Supports initializing from vector of arbitrary length
+    */
     this (int size2)(Vector!(T, size2) v)
     {           
         if (v.arrayof.length >= size)
@@ -58,7 +62,10 @@ struct Vector(T, int size)
                 arrayof[i] = v.arrayof[i];
     }
 
-    this (F)(F[] components...) if (isNumeric!F)
+   /* 
+    * Array constructor
+    */
+    this (A)(A components) if (isArray!A && !isSomeString!A)
     {        
         if (components.length >= size)
             foreach(i; 0..size)
@@ -68,17 +75,27 @@ struct Vector(T, int size)
                 arrayof[i] = components[i];
     }
 
-    this (F)(F[size] components) if (isNumeric!F)
+   /* 
+    * Tuple constructor
+    */
+    this (F...)(F components)
     {
-        foreach(i; 0..size)
-            arrayof[i] = components[i]; 
+        foreach(i, v; components)
+            static if (i < size)
+                arrayof[i] = v;
     }
 
+   /* 
+    * String constructor
+    */
     this (S)(S str) if (isSomeString!S)
     {
         arrayof = parse!(T[size])(str);
     }
 
+   /* 
+    * Vector!(T,size) = Vector!(T,size2)
+    */
     void opAssign(int size2)(Vector!(T,size2) v)
     {           
         if (v.arrayof.length >= size)
@@ -678,6 +695,23 @@ body
 }
 
 /*
+ * Tensor product
+ */
+Matrix!(T,N) tensorProduct(T, size_t N) (Vector!(T,N) u, Vector!(T,N) v)
+body
+{
+    Matrix!(T,N) res;
+    foreach(i; 0..N)
+    foreach(j; 0..N)
+    {
+        res[i, j] = u[i] * v[j];
+    }
+    return res;
+}
+
+alias tensorProduct outerProduct;
+
+/*
  * Compute normal of a plane from three points
  */
 Vector!(T,3) normal(T) (Vector!(T,3) p1, Vector!(T,3) p2, Vector!(T,3) p3)
@@ -869,6 +903,47 @@ enum AxisVector: Vector3f
     z = Vector3f(0.0f, 0.0f, 1.0f)
 }
 */
+
+/*
+ * Vector factory function 
+ */
+auto vectorf(T...)(T t) if (t.length > 0)
+{
+    return Vector!(float, t.length)(t);
+}
+
+/*
+ * L-value pseudovector for assignment purposes.
+ *
+ * Usage example:
+ *
+ *  float a, b, c
+ *  lvector(a, b, c) = Vector3f(10, 4, 2);
+ */
+auto lvector(T...)(ref T x)
+{
+    struct Result(T, uint size)
+    {
+        T*[size] arrayof;
+
+        void opAssign(int size2)(Vector!(T,size2) v)
+        {
+            if (v.arrayof.length >= size)
+                foreach(i; 0..size)
+                    *arrayof[i] = v.arrayof[i];       
+            else
+                foreach(i; 0..v.arrayof.length)
+                    *arrayof[i] = v.arrayof[i];
+        }
+    }
+
+    auto res = Result!(typeof(x[0]), x.length)();
+
+    foreach(i, ref v; x)
+        res.arrayof[i] = &v;
+
+    return res;
+}
 
 unittest
 {

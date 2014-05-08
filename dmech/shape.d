@@ -1,5 +1,5 @@
 /*
-Copyright (c) 2013-2014 Timur Gafarov 
+Copyright (c) 2014 Timur Gafarov 
 
 Boost Software License - Version 1.0 - August 17th, 2003
 
@@ -26,49 +26,57 @@ ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
 DEALINGS IN THE SOFTWARE.
 */
 
-module dmech.contact;
+module dmech.shape;
 
 import dlib.math.vector;
+import dlib.math.matrix;
+import dlib.math.affine;
+import dlib.geometry.aabb;
 
-import dmech.rigidbody;
-import dmech.shape;
+import dmech.geometry;
 
-struct Contact
+/*
+ * ShapeComponent is a proxy object between RigidBody and Geometry.
+ * It stores non-geometric information such as mass contribution,
+ * position in body space and a unique identifier for indexing in
+ * contact cache.
+ */
+
+class ShapeComponent
 {
-    RigidBody body1;
-    RigidBody body2;
-    
-    ShapeComponent shape1;
-    ShapeComponent shape2;
-    
-    bool fact;
+    Geometry geometry; // geometry
+    Vector3f centroid; // position in body space
+    float mass;        // mass contribution
+    uint id = 0;       // global identifier
 
-    Vector3f point;
-    Vector3f shape1RelPoint;
-    Vector3f shape2RelPoint;
+    Matrix4x4f transformation;
 
-    Vector3f normal;
-    float penetration;
+    alias geometry this;
 
-    Vector3f fdir1;
-    Vector3f fdir2;
-
-    float initialVelocityProjection;
-
-    float accumulatedImpulse = 0.0f;
-    float accumulatedfImpulse1 = 0.0f;
-    float accumulatedfImpulse2 = 0.0f;
-
-    void calcFDir()
+    this(Geometry g, Vector3f c, float m)
     {
-        // Calculate tangent space for contact normal
-        if (dot(normal, Vector3f(1,0,0)) < 0.5f)
-            fdir1 = cross(normal, Vector3f(1,0,0)); 
-        else
-            fdir1 = cross(normal, Vector3f(0,0,1));
-        fdir2 = cross(fdir1, normal);
-        fdir1.normalize();
-        fdir2.normalize();
+        geometry = g;
+        centroid = c;
+        mass = m;
+
+        transformation = Matrix4x4f.identity;
+    }
+
+    // position in world space
+    @property Vector3f position()
+    {
+        return transformation.translation;
+    }
+/*
+    @property GeomSphere asSphere()
+    {
+        return cast(GeomSphere)geometry;
+    }
+*/
+    @property AABB boundingBox()
+    {
+        return geometry.boundingBox(
+            transformation.translation);
     }
 }
 

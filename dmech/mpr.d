@@ -1,5 +1,5 @@
 /*
-Copyright (c) 2013 Timur Gafarov 
+Copyright (c) 2013-2014 Timur Gafarov 
 
 Boost Software License - Version 1.0 - August 17th, 2003
 
@@ -33,14 +33,14 @@ import dlib.math.matrix;
 import dlib.math.affine;
 import dlib.math.utils;
 
-import dmech.geometry;
+import dmech.shape;
 import dmech.contact;
 
 /*
  * Implementation of the Minkowski Portal Refinement algorithm
  */
 
-void supportTransformed(Geometry s, Vector3f dir, out Vector3f result)
+void supportTransformed(ShapeComponent s, Vector3f dir, out Vector3f result)
 {
     Matrix4x4f m = s.transformation;
 
@@ -65,8 +65,8 @@ void supportTransformed(Geometry s, Vector3f dir, out Vector3f result)
  */
 
 bool MPRCollisionTest(
-    Geometry s1, 
-    Geometry s2,
+    ShapeComponent s1, 
+    ShapeComponent s2,
     ref Contact c)
 {
     enum float collideEpsilon = 1e-4f;

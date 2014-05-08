@@ -1,5 +1,5 @@
 /*
-Copyright (c) 2013-2014 Timur Gafarov 
+Copyright (c) 2014 Timur Gafarov 
 
 Boost Software License - Version 1.0 - August 17th, 2003
 
@@ -26,49 +26,48 @@ ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
 DEALINGS IN THE SOFTWARE.
 */
 
-module dmech.contact;
+module dlib.image.filters.lens;
 
-import dlib.math.vector;
+import std.math;
+import dlib.image.image; 
 
-import dmech.rigidbody;
-import dmech.shape;
-
-struct Contact
+SuperImage lensDistortion(
+    SuperImage img, 
+    float strength, 
+    float zoom, 
+    bool interpolation = true)
 {
-    RigidBody body1;
-    RigidBody body2;
-    
-    ShapeComponent shape1;
-    ShapeComponent shape2;
-    
-    bool fact;
+    auto res = img.dup;
 
-    Vector3f point;
-    Vector3f shape1RelPoint;
-    Vector3f shape2RelPoint;
+    float halfWidth = cast(float)img.width / 2.0f;
+    float halfHeight = cast(float)img.height / 2.0f;
 
-    Vector3f normal;
-    float penetration;
+    float correctionRadius = sqrt(cast(float)(img.width ^^ 2 + img.height ^^ 2)) / strength;
 
-    Vector3f fdir1;
-    Vector3f fdir2;
-
-    float initialVelocityProjection;
-
-    float accumulatedImpulse = 0.0f;
-    float accumulatedfImpulse1 = 0.0f;
-    float accumulatedfImpulse2 = 0.0f;
-
-    void calcFDir()
+    foreach(y; 0..img.height)
+    foreach(x; 0..img.width)
     {
-        // Calculate tangent space for contact normal
-        if (dot(normal, Vector3f(1,0,0)) < 0.5f)
-            fdir1 = cross(normal, Vector3f(1,0,0)); 
+        float newX = x - halfWidth;
+        float newY = y - halfHeight;
+
+        float distance = sqrt(newX ^^ 2 + newY ^^ 2);
+        float r = distance / correctionRadius;
+
+        float theta;
+        if (r == 0)
+            theta = 1;
         else
-            fdir1 = cross(normal, Vector3f(0,0,1));
-        fdir2 = cross(fdir1, normal);
-        fdir1.normalize();
-        fdir2.normalize();
+            theta = atan(r) / r;
+
+        float sourceX = (halfWidth + theta * newX * zoom);
+        float sourceY = (halfHeight + theta * newY * zoom);
+
+        if (interpolation)
+            res[x, y] = img.bilinearPixel(sourceX, sourceY);
+        else
+            res[x, y] = img[cast(int)sourceX, cast(int)sourceY];
     }
+
+    return res;
 }
 

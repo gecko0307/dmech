@@ -1,5 +1,5 @@
 /*
-Copyright (c) 2013 Timur Gafarov 
+Copyright (c) 2013-2014 Timur Gafarov 
 
 Boost Software License - Version 1.0 - August 17th, 2003
 
@@ -26,7 +26,7 @@ ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
 DEALINGS IN THE SOFTWARE.
 */
 
-module geometry;
+module dmech.geometry;
 
 import std.math;
 
@@ -35,9 +35,7 @@ import dlib.math.matrix;
 import dlib.math.affine;
 import dlib.math.utils;
 import dlib.geometry.aabb;
-import dlib.geometry.sphere;
-
-import dmech.bvh;
+//import dlib.geometry.sphere;
 
 enum GeomType
 {
@@ -53,16 +51,9 @@ enum GeomType
 abstract class Geometry
 {
     GeomType type = GeomType.Undefined;
-    Matrix4x4f transformation;
 
     this()
     {
-        transformation = Matrix4x4f.identity;
-    }
-    
-    @property Vector3f position()
-    {
-        return transformation.translation;
     }
     
     Vector3f supportPoint(Vector3f dir)
@@ -75,12 +66,7 @@ abstract class Geometry
         return Matrix3x3f.identity * mass;
     }
 
-    @property Sphere boundingSphere()
-    {
-        return Sphere(position, 1.0f);
-    }
-    
-    @property AABB boundingBox()
+    AABB boundingBox(Vector3f position)
     {
         return AABB(position, Vector3f(1.0f, 1.0f, 1.0f));
     }
@@ -112,13 +98,8 @@ class GeomSphere: Geometry
             0, 0, v
         );
     }
-    
-    override @property Sphere boundingSphere()
-    {
-        return Sphere(position, radius);
-    }
-    
-    override @property AABB boundingBox()
+
+    override AABB boundingBox(Vector3f position)
     {
         return AABB(position, Vector3f(radius, radius, radius));
     }
@@ -158,13 +139,8 @@ class GeomBox: Geometry
             0, 0, (x2 + y2)/3 * mass
         );
     }
-    
-    override @property Sphere boundingSphere()
-    {
-        return Sphere(position, bsphereRadius);
-    }
-    
-    override @property AABB boundingBox()
+
+    override AABB boundingBox(Vector3f position)
     {
         return AABB(position, 
             Vector3f(bsphereRadius, bsphereRadius, bsphereRadius));
@@ -217,14 +193,7 @@ class GeomCylinder: Geometry
         );
     }
 
-    override @property Sphere boundingSphere()
-    {
-        float rsum = radius + radius;
-        float d = sqrt(rsum * rsum + height * height) * 0.5f;
-        return Sphere(position, d);
-    }
-    
-    override @property AABB boundingBox()
+    override AABB boundingBox(Vector3f position)
     {
         float rsum = radius + radius;
         float d = sqrt(rsum * rsum + height * height) * 0.5f;
@@ -271,13 +240,7 @@ class GeomCone: Geometry
     {
         float r2 = radius * radius;
         float h2 = height * height;
-/*
-        return matrixf(
-            (3/5*h2 + 3/10*r2) * mass, 0, 0,
-            0, (3/5*h2 + 3/10*r2) * mass, 0,
-            0, 0, (3/10*r2) * mass
-        );
-*/
+
         return matrixf(
             (3.0f/80.0f*h2 + 3.0f/20.0f*r2) * mass, 0, 0,
             0, (3.0f/80.0f*h2 + 3.0f/20.0f*r2) * mass, 0,
@@ -285,7 +248,6 @@ class GeomCone: Geometry
         );
     }
 
-    // TODO: boundingSphere
     // TODO: boundingBox
 }
 
@@ -318,7 +280,6 @@ class GeomEllipsoid: Geometry
         );
     }
 
-    // TODO: boundingSphere
     // TODO: boundingBox
 }
 
@@ -334,7 +295,7 @@ class GeomTriangle: Geometry
         v[1] = b;
         v[2] = c;
     }
-/*
+
     override Vector3f supportPoint(Vector3f dir)
     {
         float dota = dir.dot(v[0]);
@@ -356,37 +317,7 @@ class GeomTriangle: Geometry
                 return v[1];
         }
     }
-*/
 
-    override Vector3f supportPoint(Vector3f dir)
-    {
-        float maxDist = float.min;
-        int maxIndex = -1;
-
-        for (int i = 0; i < 3; ++i)
-        {
-            float result = v[i].dot(dir);
-            if (result > maxDist)
-            {
-                maxIndex = i;
-                maxDist = result;
-            }
-        }
-           
-        // Slap an epsilon value against the normal of the triangle plane as "volume"
-        // So that MPR may terminate before it tries to construct the tetrahedron
-        Vector3f point = dir.normalized * EPSILON; //sphere.GetSupportPoint(normal);
-
-        // EDIT: Singularity when 2 centers are perfectly on-line to the normal from the origin
-        if (maxDist > EPSILON)
-            point += v[maxIndex]; // Standard cases
-        else
-            point += (v[0] + v[1] + v[2])/3; // Returns centroid instead
-
-        return point;
-    }
-
-    // TODO: boundingSphere
     // TODO: boundingBox
 }
 
