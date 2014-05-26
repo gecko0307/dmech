@@ -23,10 +23,10 @@ Planned in future:
 
 Dependencies
 ------------
-The project is completely self-sufficient, though dmech heavily relies on [dlib](http://github.com/gecko0307/dlib) - a collection of utility libraries for D, including linear math and comutational geometry functionality. dlib is currently under active development and has no stable release yet, so dmech comes with a compatible version of dlib source tree bundled. I try to sync the codebase timely, but dmech occasionally lags behind.
+dmech heavily relies on [dlib](http://github.com/gecko0307/dlib) - a collection of utility libraries for D, including linear math and comutational geometry functionality. The demo uses [DGL](http://github.com/gecko0307/dgl) for rendering.
 
 License
 -------
-Copyright (c) 2013 Timur Gafarov.
+Copyright (c) 2013-2014 Timur Gafarov.
 Distributed under the Boost Software License, Version 1.0. (See accompanying file COPYING or at http://www.boost.org/LICENSE_1_0.txt)
 
