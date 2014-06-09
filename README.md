@@ -32,5 +32,5 @@ Distributed under the Boost Software License, Version 1.0. (See accompanying fil
 
 Screenshots
 -----------
-![Screenshot1](http://1.bp.blogspot.com/-fH6xjoZtKeY/U5VlicpiUOI/AAAAAAAABH8/YYQ3KW3d8Dg/s1600/020+lot-of-cylinders.jpg)
+![Screenshot1](http://1.bp.blogspot.com/-fH6xjoZtKeY/U5VlicpiUOI/AAAAAAAABH8/YYQ3KW3d8Dg/s1600/020+lot-of-cylinders.jpg =250x)
 
