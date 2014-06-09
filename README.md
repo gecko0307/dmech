@@ -1,6 +1,6 @@
 dmech
 =====
-dmech is a real-time 3D physics engine written in D language. It is more suitable for computer games than scientific simulations: the goal is to convince a player, rather than giving accurate results. Currently dmech is in early stages of development, hence not considered for production use.
+dmech is a real-time 3D physics engine written in D language. It is more suitable for computer games than scientific simulations: the goal is to convince a player, rather than giving accurate results. Currently dmech is in early stages of development, not considered for production use.
 
 Features
 --------
@@ -9,13 +9,13 @@ Already implemented:
 * Basic geometry shapes (sphere, box, cylinder, cone, ellipsoid)
 * Support for any convex shape defined by support mapping
 * Muttiple geometries per body
+* Arbitrary static trimeshes
 * Simple body constraints: distance and ball-socket
 * Persistent contact cache
 
 Planned in future:
 * More shapes (capsule, plane, convex hull, etc.)
 * Minkowski sum shape
-* Arbitrary static trimeshes
 * New constraint types
 * Force fields
 * Kinematic bodies
@@ -23,7 +23,7 @@ Planned in future:
 
 Dependencies
 ------------
-dmech heavily relies on [dlib](http://github.com/gecko0307/dlib) - a collection of utility libraries for D, including linear math and comutational geometry functionality. The demo uses [DGL](http://github.com/gecko0307/dgl) for rendering.
+dmech heavily relies on [dlib](http://github.com/gecko0307/dlib) - a collection of utility libraries for D, including linear math and computational geometry functionality. The demo uses [DGL](http://github.com/gecko0307/dgl) for rendering.
 
 License
 -------
