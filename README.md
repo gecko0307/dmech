@@ -32,6 +32,6 @@ Distributed under the Boost Software License, Version 1.0. (See accompanying fil
 
 Screenshots
 -----------
-[![Screenshot1](/images/screenshot1_thumb.jpg)](/images/screenshot_thumb.jpg)
-[![Screenshot2](/images/screenshot2_thumb.jpg)](/images/screenshot_thumb.jpg)
+[![Screenshot1](/images/screenshot1_thumb.jpg)](/images/screenshot1.jpg)
+[![Screenshot2](/images/screenshot2_thumb.jpg)](/images/screenshot2.jpg)
 
