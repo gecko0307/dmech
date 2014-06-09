@@ -32,6 +32,6 @@ Distributed under the Boost Software License, Version 1.0. (See accompanying fil
 
 Screenshots
 -----------
-[![Screenshot1](http://1.bp.blogspot.com/-fH6xjoZtKeY/U5VlicpiUOI/AAAAAAAABH8/YYQ3KW3d8Dg/s1600/020+lot-of-cylinders.jpg)]
-[![Screenshot2](http://2.bp.blogspot.com/-ji613dzfgJo/U5VmIva2ekI/AAAAAAAABIE/qz3_zNfBuUk/s1600/019+cylinders-pyramid.jpg)]
+[![Screenshot1](/images/screenshot1_thumb.jpg)](/images/screenshot_thumb.jpg)
+[![Screenshot2](/images/screenshot2_thumb.jpg)](/images/screenshot_thumb.jpg)
 
