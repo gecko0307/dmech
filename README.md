@@ -30,3 +30,7 @@ License
 Copyright (c) 2013-2014 Timur Gafarov.
 Distributed under the Boost Software License, Version 1.0. (See accompanying file COPYING or at http://www.boost.org/LICENSE_1_0.txt)
 
+Screenshots
+-----------
+![Screenshot1](http://1.bp.blogspot.com/-fH6xjoZtKeY/U5VlicpiUOI/AAAAAAAABH8/YYQ3KW3d8Dg/s1600/020+lot-of-cylinders.jpg)
+
