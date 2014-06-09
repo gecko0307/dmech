@@ -32,6 +32,7 @@ import dlib.math.vector;
 import dlib.math.matrix;
 import dlib.math.affine;
 import dlib.geometry.aabb;
+import dlib.geometry.sphere;
 
 import dmech.geometry;
 
@@ -49,9 +50,27 @@ class ShapeComponent
     float mass;        // mass contribution
     uint id = 0;       // global identifier
 
-    Matrix4x4f transformation;
+    Matrix4x4f _transformation;
 
     alias geometry this;
+
+    bool locked = false;
+
+    @property
+    {
+        Matrix4x4f transformation()
+        {
+            while(locked) {}
+            return _transformation;
+        }
+
+        void transformation(Matrix4x4f m)
+        {
+            locked = true;
+            _transformation = m;
+            locked = false;
+        }
+    }
 
     this(Geometry g, Vector3f c, float m)
     {
@@ -59,24 +78,26 @@ class ShapeComponent
         centroid = c;
         mass = m;
 
-        transformation = Matrix4x4f.identity;
+        _transformation = Matrix4x4f.identity;
     }
 
     // position in world space
     @property Vector3f position()
     {
-        return transformation.translation;
+        return _transformation.translation;
     }
-/*
-    @property GeomSphere asSphere()
-    {
-        return cast(GeomSphere)geometry;
-    }
-*/
+
     @property AABB boundingBox()
     {
         return geometry.boundingBox(
-            transformation.translation);
+            _transformation.translation);
+    }
+    
+    @property Sphere boundingSphere()
+    {
+        AABB aabb = geometry.boundingBox(
+            _transformation.translation);
+        return Sphere(aabb.center, aabb.size.length);
     }
 }
 

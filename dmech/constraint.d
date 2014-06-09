@@ -32,6 +32,7 @@ import std.math;
 import std.algorithm;
 
 import dlib.math.vector;
+import dlib.math.matrix;
 import dlib.math.quaternion;
 
 import dmech.rigidbody;
@@ -147,6 +148,116 @@ class DistanceConstraint: Constraint
     }
 }
 
+class BallConstraint2: Constraint
+{
+    Vector3f localAnchor1, localAnchor2;
+
+    alias Gradient = Vector3f[4];
+    Gradient[3] jacobian;
+
+    double dt;
+
+    Vector3f r1, r2, p1, p2, dp;
+    float error;
+
+    this(RigidBody body1, RigidBody body2, Vector3f anchor1, Vector3f anchor2)
+    {
+        this.body1 = body1;
+        this.body2 = body2;
+        
+        localAnchor1 = anchor1;
+        localAnchor2 = anchor2;
+
+        jacobian[0] = [Vector3f(-1, 0, 0), Vector3f(0, 0, 0), Vector3f(1, 0, 0), Vector3f(0, 0, 0)];
+        jacobian[1] = [Vector3f( 0,-1, 0), Vector3f(0, 0, 0), Vector3f(0, 1, 0), Vector3f(0, 0, 0)];
+        jacobian[2] = [Vector3f( 0, 0,-1), Vector3f(0, 0, 0), Vector3f(0, 0, 1), Vector3f(0, 0, 0)];
+    }
+
+    override void prepare(double dt)
+    {
+        this.dt = dt;
+
+        r1 = body1.orientation.rotate(localAnchor1);
+        r2 = body2.orientation.rotate(localAnchor2);
+
+        p1 = body1.position + r1;
+        p2 = body2.position + r2;
+
+        dp = p2 - p1;
+
+        error = dp.length;
+    }
+
+    override void step()
+    {
+        float[3] lambda;
+        lambda[0] = solveForRow(0);
+        lambda[1] = solveForRow(1);
+        lambda[2] = solveForRow(2);
+
+        foreach(i; 0..3)
+        {
+            if (body1.dynamic)
+            {
+                body1.linearVelocity += jacobian[i][0] * body1.invMass * lambda[i];
+                body1.angularVelocity += jacobian[i][1] * body1.invInertiaTensor * lambda[i];
+                //body1.applyImpulse(jacobian[i][0], p1);
+            }
+
+            if (body2.dynamic)
+            {
+                body2.linearVelocity += jacobian[i][2] * body2.invMass * lambda[i];
+                body2.angularVelocity += jacobian[i][3] * body2.invInertiaTensor * lambda[i];
+                 //body2.applyImpulse(jacobian[i][2], p2);
+            }
+        }
+    }
+
+    float solveForRow(uint r)
+    {
+        //Vector3f n = dp.normalized;
+
+        //jacobian[r][1] = cross(r1, jacobian[r][2]);
+        //jacobian[r][3] = cross(r2, jacobian[r][0]);
+
+        if (r == 0)
+        {
+            jacobian[r][1] = Vector3f(0, -r1.z,  r1.y);
+            jacobian[r][3] = Vector3f(0, -r2.z,  r2.y);
+        }
+        if (r == 1)
+        {
+            jacobian[r][1] = Vector3f(r1.z,  0, -r1.x);
+            jacobian[r][3] = Vector3f(r2.z,  0, -r2.x);
+        }
+        if (r == 2)
+        {
+            jacobian[r][1] = Vector3f(-r1.y,  r1.x,  0);
+            jacobian[r][3] = Vector3f(-r2.y,  r2.x,  0);
+        }
+
+        float jv =
+            dot(body1.linearVelocity,  jacobian[r][0]) +
+            dot(body1.angularVelocity, jacobian[r][1]) +
+            dot(body2.linearVelocity,  jacobian[r][2]) +
+            dot(body2.angularVelocity, jacobian[r][3]);
+
+        float effectiveMass = 
+            body1.invMass + 
+            body2.invMass +
+            dot(jacobian[r][1] * body1.invInertiaTensor, jacobian[r][1]) +
+            dot(jacobian[r][3] * body2.invInertiaTensor, jacobian[r][3]);
+
+        float allowedError = 0.01f;
+        float biasFactor = 0.3f; // 0.1 to 0.3
+        float bias = biasFactor * (1.0f / dt) * allowedError;
+
+        float lambda = -(jv + bias) / effectiveMass;
+
+        return lambda;
+    }
+}
+
 /*
  * The ball-socket constraint, also known as point to point constraint, 
  * limits the translation so that the local anchor points of two rigid bodies 
@@ -252,7 +363,6 @@ class BallConstraint: Constraint
  * Constraints a point on a body to be fixed on a line
  * which is fixed on another body.
  */
-/*
 class SliderConstraint: Constraint
 {
     Vector3f lineNormal;
@@ -264,7 +374,7 @@ class SliderConstraint: Constraint
    
     float accumulatedImpulse = 0.0f;
     
-    float biasFactor = 1.0f;
+    float biasFactor = 0.5f;
     float softness = 0.0f;
     
     float softnessOverDt;
@@ -359,4 +469,77 @@ class SliderConstraint: Constraint
         }
     }
 }
+
+/*
+class AngleConstraint: Constraint
+{
+    Vector3f[4] jacobian; 
+   
+    Vector3f accumulatedImpulse = Vector3f(0, 0, 0);
+    
+    float biasFactor = 0.05f;
+    float softness = 0.0f;
+    
+    float softnessOverDt;
+    Matrix3x3f effectiveMass;
+    Vector3f bias;
+
+    this(RigidBody body1, RigidBody body2)
+    {
+        this.body1 = body1;
+        this.body2 = body2;
+    }
+
+    override void prepare(double dt)
+    {
+        effectiveMass = body1.invInertiaTensor + body2.invInertiaTensor;
+
+        softnessOverDt = softness / dt;
+
+        effectiveMass.a11 += softnessOverDt;
+        effectiveMass.a22 += softnessOverDt;
+        effectiveMass.a33 += softnessOverDt;
+
+        effectiveMass = effectiveMass.inverse;
+
+        Matrix3x3f orientationDifference = Matrix3x3f.identity;
+        auto rot1 = body1.orientation.toMatrix3x3;
+        auto rot2 = body2.orientation.toMatrix3x3;
+        Matrix3x3f q = orientationDifference * rot2.inverse * rot1;
+
+        Vector3f axis;
+        float x = q.a32 - q.a23;
+        float y = q.a13 - q.a31;
+        float z = q.a21 - q.a12;
+        float r = sqrt(x * x + y * y + z * z);
+        float t = q.a11 + q.a22 + q.a33;
+        float angle = atan2(r, t - 1);
+        axis = Vector3f(x, y, z) * angle;
+
+        if (r != 0.0f) axis = axis * (1.0f / r);
+
+        bias = axis * biasFactor * (-1.0f / dt);
+
+        if (body1.dynamic)
+            body1.angularVelocity += accumulatedImpulse * body1.invInertiaTensor;
+        if (body2.dynamic)
+            body2.angularVelocity += -accumulatedImpulse * body2.invInertiaTensor;
+
+    }
+
+    override void step()
+    {
+        Vector3f jv = body1.angularVelocity - body2.angularVelocity;
+        Vector3f softnessVector = accumulatedImpulse * softnessOverDt;
+
+        Vector3f lambda = -1.0f * (jv+bias+softnessVector) * effectiveMass;
+        accumulatedImpulse += lambda;
+
+        if (body1.dynamic)
+            body1.angularVelocity += lambda * body1.invInertiaTensor;
+        if (body2.dynamic)
+            body2.angularVelocity += -lambda * body2.invInertiaTensor;
+    }
+}
 */
+

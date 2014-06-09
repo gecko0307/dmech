@@ -35,7 +35,6 @@ import dlib.math.matrix;
 import dlib.math.affine;
 import dlib.math.utils;
 import dlib.geometry.aabb;
-//import dlib.geometry.sphere;
 
 enum GeomType
 {
@@ -248,7 +247,12 @@ class GeomCone: Geometry
         );
     }
 
-    // TODO: boundingBox
+    override AABB boundingBox(Vector3f position)
+    {
+        float rsum = radius + radius;
+        float d = sqrt(rsum * rsum + height * height) * 0.5f;
+        return AABB(position, Vector3f(d, d, d));
+    }
 }
 
 class GeomEllipsoid: Geometry
@@ -280,7 +284,10 @@ class GeomEllipsoid: Geometry
         );
     }
 
-    // TODO: boundingBox
+    override AABB boundingBox(Vector3f position)
+    {
+        return AABB(position, radii);
+    }
 }
 
 class GeomTriangle: Geometry

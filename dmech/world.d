@@ -28,8 +28,13 @@ DEALINGS IN THE SOFTWARE.
 
 module dmech.world;
 
+import std.math;
+
 import dlib.math.vector;
 import dlib.math.matrix;
+import dlib.math.affine;
+import dlib.geometry.triangle;
+import dlib.geometry.sphere;
 
 import dmech.rigidbody;
 import dmech.geometry;
@@ -40,7 +45,13 @@ import dmech.pairhashtable;
 import dmech.collision;
 import dmech.pcm;
 import dmech.constraint;
-//import dmech2.bvh;
+import dmech.bvh;
+import dmech.mpr;
+
+/*
+ * World object stores bodies and constraints and performs
+ * simulation cycles on them.
+ */
 
 class World
 {
@@ -60,12 +71,46 @@ class World
     uint contactIterations = 12;
     uint positionCorrectionIterations = 5;
     uint constraintIterations = 5;
+    
+    BVHNode!Triangle bvhRoot = null;
+
+    // Proxy triangle to deal with BVH data
+    RigidBody proxyTri;
+    ShapeComponent proxyTriShape;
+    GeomTriangle proxyTriGeom;
 
     this(size_t maxCollisions = 1000)
     {
         gravity = Vector3f(0.0f, -9.80665f, 0.0f); // Earth
 
         manifolds = new PairHashTable!PersistentContactManifold(maxCollisions);
+        
+        // Create proxy triangle 
+        proxyTri = new RigidBody();
+        proxyTri.position = Vector3f(0, 0, 0);
+        proxyTriGeom = new GeomTriangle(
+            Vector3f(-1.0f, 0.0f, -1.0f), 
+            Vector3f(+1.0f, 0.0f,  0.0f),
+            Vector3f(-1.0f, 0.0f, +1.0f));
+        proxyTriShape = new ShapeComponent(proxyTriGeom, Vector3f(0, 0, 0), 1);
+        proxyTriShape.id = maxShapeId;
+        maxShapeId++;
+        proxyTriShape.transformation = 
+            proxyTri.transformation() * translationMatrix(proxyTriShape.centroid);
+        proxyTri.shapes ~= proxyTriShape;
+        proxyTri.mass = float.infinity;
+        proxyTri.invMass = 0.0f;
+        proxyTri.inertiaTensor = matrixf(
+            float.infinity, 0, 0,
+            0, float.infinity, 0,
+            0, 0, float.infinity
+        );
+        proxyTri.invInertiaTensor = matrixf(
+            0, 0, 0,
+            0, 0, 0,
+            0, 0, 0
+        );
+        proxyTri.dynamic = false;
     }
 
     RigidBody addDynamicBody(Vector3f pos, float mass = 0.0f)
@@ -231,10 +276,107 @@ class World
                         Contact c;
                         c.body1 = body1;
                         c.body2 = body2;
+                        c.shape2pos = shape2.position;
                         checkCollisionPair(shape1, shape2, c);
                     }
                 }
             }
+        }
+        
+        // Find collisions between dynamic bodies 
+        // and the BVH world (static triangle mesh)
+        if (bvhRoot !is null)
+        foreach(rb; dynamicBodies)
+        foreach(shape; rb.shapes)
+        {
+            // There may be more than one contact at a time
+            static Contact[5] contacts;
+            static Triangle[5] contactTris;
+            uint numContacts = 0;
+
+            Contact c;
+            c.body1 = rb;
+            c.body2 = proxyTri;
+            c.fact = false;
+
+            Sphere sphere = shape.boundingSphere;
+
+            bvhRoot.traverseBySphere(sphere, (ref Triangle tri)
+            {
+                // Update temporary triangle to check collision
+                proxyTriShape.transformation = translationMatrix(tri.barycenter);
+                proxyTriGeom.v[0] = tri.v[0] - tri.barycenter;
+                proxyTriGeom.v[1] = tri.v[1] - tri.barycenter;
+                proxyTriGeom.v[2] = tri.v[2] - tri.barycenter;
+
+                bool collided = checkCollision(shape, proxyTriShape, c);
+                
+                if (collided)
+                {                
+                    if (numContacts < contacts.length)
+                    {
+                        c.shape1RelPoint = c.point - shape.position;
+                        c.shape2RelPoint = c.point - tri.barycenter;
+                        c.body1RelPoint = c.point - c.body1.worldCenterOfMass;
+                        c.body2RelPoint = c.point - tri.barycenter;
+                        c.shape1 = shape;
+                        c.shape2 = proxyTriShape;
+                        c.shape2pos = tri.barycenter;
+                        contacts[numContacts] = c;
+                        contactTris[numContacts] = tri;
+                        numContacts++;
+                    }
+                }
+            });
+            
+           /*
+            * NOTE:
+            * There is a problem when rolling bodies over a triangle mesh. Instead of rolling 
+            * straight it will get influenced when hitting triangle edges. 
+            * Current solution is to solve only the contact with deepest penetration and 
+            * throw out all others. Other possible approach is to merge all contacts that 
+            * are within epsilon of each other. When merging the contacts, average and 
+            * re-normalize the normals, and average the penetration depth value.
+            */
+
+            int deepestContactIdx = -1;
+            float maxPen = 0.0f;
+            float bestGroundness = -1.0f;
+            foreach(i; 0..numContacts)
+            {
+                if (contacts[i].penetration > maxPen)
+                {
+                    deepestContactIdx = i;
+                    maxPen = contacts[i].penetration;
+                }
+                
+                // Not sure if this is needed
+                //Vector3f dirToContact = (contacts[i].point - rb.position).normalized;
+                //float groundness = dot(gravity.normalized, dirToContact);
+
+                //if (groundness > 0.7f)
+                //    rb.onGround = true;
+            }
+                
+            if (deepestContactIdx >= 0)
+            {                   
+                auto co = &contacts[deepestContactIdx];    
+                co.calcFDir();
+                    
+                auto m = manifolds.get(shape.id, proxyTriShape.id);
+                if (m is null)
+                {
+                    PersistentContactManifold m1;
+                    m1.addContact(*co);
+                    manifolds.set(shape.id, proxyTriShape.id, m1);
+                }
+                else
+                {
+                    m.addContact(*co);
+                }
+            }
+            else
+                manifolds.remove(shape.id, proxyTriShape.id);
         }
     }
 
@@ -242,6 +384,8 @@ class World
     {
         if (checkCollision(shape1, shape2, c))
         {
+            c.body1RelPoint = c.point - c.body1.worldCenterOfMass;
+            c.body2RelPoint = c.point - c.body2.worldCenterOfMass;
             c.shape1RelPoint = c.point - shape1.position;
             c.shape2RelPoint = c.point - shape2.position;
             c.shape1 = shape1;
@@ -253,13 +397,11 @@ class World
             {
                 PersistentContactManifold m1;
                 m1.addContact(c);
-                //m1.computeContacts(c);
                 manifolds.set(shape1.id, shape2.id, m1);
             }
             else
             {
                 m.addContact(c);
-                //m.computeContacts(c);
             }
         }
         else

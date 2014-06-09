@@ -36,7 +36,6 @@ import dlib.math.quaternion;
 import dlib.math.affine;
 import dlib.math.utils;
 
-//import dmech.geometry;
 import dmech.shape;
 
 class RigidBody
@@ -72,7 +71,7 @@ class RigidBody
     bool dynamic;
 
     float damping = 0.5f;
-    float stopThreshold = 0.15f; //0.15f;
+    float stopThreshold = 0.15f;
     float stopThresholdPV = 0.01f;
 
     this()

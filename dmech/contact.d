@@ -41,11 +41,17 @@ struct Contact
     ShapeComponent shape1;
     ShapeComponent shape2;
     
+    Vector3f shape1pos;
+    Vector3f shape2pos;
+    
     bool fact;
 
     Vector3f point;
     Vector3f shape1RelPoint;
     Vector3f shape2RelPoint;
+    
+    Vector3f body1RelPoint;
+    Vector3f body2RelPoint;
 
     Vector3f normal;
     float penetration;

@@ -28,10 +28,7 @@ DEALINGS IN THE SOFTWARE.
 
 module dmech.pcm;
 
-//import std.stdio;
-
 import dlib.math.vector;
-
 import dmech.contact;
 
 /*
@@ -45,7 +42,7 @@ import dmech.contact;
  */
 struct PersistentContactManifold
 {
-    Contact[8] contacts;
+    Contact[4] contacts;
     uint numContacts = 0;
 
     void addContact(Contact c)
@@ -68,12 +65,21 @@ struct PersistentContactManifold
         {
             auto c = &contacts[i];
 
-            Vector3f p1 = c.shape1RelPoint + c.shape1.position;
-            Vector3f p2 = c.shape2RelPoint + c.shape2.position;
+            Vector3f p1, p2;
+
+            if (c.body1.dynamic)
+                p1 = c.shape1RelPoint + c.shape1.position;
+            else
+                p1 = c.shape1RelPoint + c.shape1pos;
+                
+            if (c.body2.dynamic)
+                p2 = c.shape2RelPoint + c.shape2.position;
+            else
+                p2 = c.shape2RelPoint + c.shape2pos;
 
             float d = distance(p1, p2);
 
-            if (d > 0.1f)
+            if (d > 0.15f)
             {
                 this.removeContact(i);
             }
@@ -87,7 +93,7 @@ struct PersistentContactManifold
 
     void append(Contact c)
     {
-        if (numContacts < 8)
+        if (numContacts < contacts.length)
         {
             contacts[numContacts] = c;
             numContacts++;

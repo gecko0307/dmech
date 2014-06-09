@@ -42,8 +42,8 @@ void prepareContact(Contact* c, bool warmstarting = false)
     RigidBody body1 = c.body1;
     RigidBody body2 = c.body2;
     
-    Vector3f r1 = c.point - body1.worldCenterOfMass;
-    Vector3f r2 = c.point - body2.worldCenterOfMass;
+    Vector3f r1 = c.body1RelPoint; //c.point - body1.worldCenterOfMass;
+    Vector3f r2 = c.body2RelPoint; //c.point - body2.worldCenterOfMass;
     
     Vector3f relativeVelocity = Vector3f(0.0f, 0.0f, 0.0f);
 
@@ -70,8 +70,11 @@ void solveContact(Contact* c, bool warmstarting = false)
     RigidBody body1 = c.body1;
     RigidBody body2 = c.body2;
     
-    Vector3f r1 = c.point - body1.worldCenterOfMass;
-    Vector3f r2 = c.point - body2.worldCenterOfMass;
+    Vector3f r1 = c.body1RelPoint; //c.point - body1.worldCenterOfMass;
+    Vector3f r2 = c.body2RelPoint; //c.point - body2.worldCenterOfMass;
+    
+    assert(!isnan(r1.x));
+    assert(!isnan(r2.x));
 
     Vector3f relativeVelocity = Vector3f(0.0f, 0.0f, 0.0f);
     relativeVelocity += body1.linearVelocity + cross(body1.angularVelocity, r1);
@@ -109,6 +112,8 @@ void solveContact(Contact* c, bool warmstarting = false)
             + dot(w2, w2 * body2.invInertiaTensor);
 
     float normalImpulse = (C - a + bias) / b;
+    
+    assert(!isnan(normalImpulse));
 
     if (warmstarting)
     {
@@ -172,8 +177,8 @@ void solvePositionError(Contact* c, uint numContacts)
     RigidBody body1 = c.body1;
     RigidBody body2 = c.body2;
     
-    Vector3f r1 = c.point - body1.worldCenterOfMass;
-    Vector3f r2 = c.point - body2.worldCenterOfMass;
+    Vector3f r1 = c.body1RelPoint; //c.point - body1.worldCenterOfMass;
+    Vector3f r2 = c.body2RelPoint; //c.point - body2.worldCenterOfMass;
        
     Vector3f prv = Vector3f(0.0f, 0.0f, 0.0f);
     prv += body1.pseudoLinearVelocity + cross(body1.pseudoAngularVelocity, r1);
