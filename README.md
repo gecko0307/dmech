@@ -12,11 +12,12 @@ Features
 --------
 Already implemented:
 * Impulse-based rigid body dynamics with iterative SI solver
+* High-performance collision detection (MPR algorithm)
 * Basic geometry shapes (sphere, box, cylinder, cone, ellipsoid)
 * Support for any convex shape defined by support mapping
 * Multiple geometries per body
-* Arbitrary static trimeshes
-* Simple body constraints: distance and ball-socket
+* Arbitrary static trimeshes (collision detection is optimized via BVH)
+* Simple body constraints: distance, ball-socket, slider
 * Persistent contact cache
 
 Planned in future:
