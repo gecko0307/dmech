@@ -2,6 +2,11 @@ dmech
 =====
 dmech is a real-time 3D physics engine written in D language. It is more suitable for computer games than scientific simulations: the goal is to convince a player, rather than giving accurate results. Currently dmech is in early stages of development, not considered for production use.
 
+Screenshots
+-----------
+[![Screenshot1](/images/screenshot1_thumb.jpg)](/images/screenshot1.jpg)
+[![Screenshot2](/images/screenshot2_thumb.jpg)](/images/screenshot2.jpg)
+
 Features
 --------
 Already implemented:
@@ -29,9 +34,4 @@ License
 -------
 Copyright (c) 2013-2014 Timur Gafarov.
 Distributed under the Boost Software License, Version 1.0. (See accompanying file COPYING or at http://www.boost.org/LICENSE_1_0.txt)
-
-Screenshots
------------
-[![Screenshot1](/images/screenshot1_thumb.jpg)](/images/screenshot1.jpg)
-[![Screenshot2](/images/screenshot2_thumb.jpg)](/images/screenshot2.jpg)
 
