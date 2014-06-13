@@ -79,7 +79,7 @@ struct PersistentContactManifold
 
             float d = distance(p1, p2);
 
-            if (d > 0.15f)
+            if (d > 0.14f) //0.15f
             {
                 this.removeContact(i);
             }

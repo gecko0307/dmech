@@ -48,101 +48,140 @@ abstract class Constraint
 
 /*
  * Keeps bodies at some fixed distance from each other.
+ * Also works as a spring, if softness is set to a higher value.
  */
 class DistanceConstraint: Constraint
 {
+    enum DistanceBehavior
+    {
+        LimitDistance,
+        LimitMaximumDistance,
+        LimitMinimumDistance,
+    }
+
     Vector3f r1, r2;
-    
+
     float biasFactor = 0.1f;
     float softness = 0.01f;
     float distance;
-    
+
+    DistanceBehavior behavior = DistanceBehavior.LimitDistance;
+
+    this(RigidBody body1, RigidBody body2, float dist = 0.0f)
+    {
+        this.body1 = body1;
+        this.body2 = body2;
+
+        if (dist > 0.0f)
+            distance = dist;
+        else
+            distance = (body1.worldCenterOfMass - body2.worldCenterOfMass).length;
+    }
+
     float effectiveMass = 0.0f;
     float accumulatedImpulse = 0.0f;
     float bias;
     float softnessOverDt;
-    
+
     Vector3f[4] jacobian;
-    
-    this(
-        RigidBody body1, 
-        RigidBody body2,
-        float dist)
-    {
-        this.body1 = body1;
-        this.body2 = body2;
-        
-        distance = dist;
-    }
-    
-    override void prepare(double delta)
+
+    bool skipConstraint = false;
+
+    float myCounter = 0.0f;
+
+    override void prepare(double dt)
     {
         r1 = Vector3f(0.0f, 0.0f, 0.0f);
         r2 = Vector3f(0.0f, 0.0f, 0.0f);
 
-        Vector3f p1, p2, dp;
-        p1 = body1.position;
-        p2 = body2.position;
-        dp = p2 - p1;
-        
+        Vector3f dp = body2.worldCenterOfMass - body1.worldCenterOfMass;
+
         float deltaLength = dp.length - distance;
 
-        Vector3f n = (p2 - p1).normalized;
-            
-        jacobian[0] = -n;
-        jacobian[1] = -cross(r1, n);
-        jacobian[2] = n;
-        jacobian[3] = cross(r2, n);
-            
-        effectiveMass = 
-            body1.invMass + 
-            body2.invMass +
-            dot(jacobian[1] * body1.invInertiaTensor, jacobian[1]) +
-            dot(jacobian[3] * body2.invInertiaTensor, jacobian[3]);
-                
-        softnessOverDt = softness / delta;
-        effectiveMass += softnessOverDt;
-
-        if (effectiveMass != 0)
-            effectiveMass = 1.0f / effectiveMass;
-                
-        bias = deltaLength * biasFactor * (1.0f / delta);
-            
-        if (body1.dynamic)
+        if (behavior == DistanceBehavior.LimitMaximumDistance && deltaLength <= 0.0f)
+            skipConstraint = true;
+        else if (behavior == DistanceBehavior.LimitMinimumDistance && deltaLength >= 0.0f)
+            skipConstraint = true;
+        else
         {
-            body1.linearVelocity += jacobian[0] * accumulatedImpulse * body1.invMass;
-            body1.angularVelocity += jacobian[1] * accumulatedImpulse * body1.invInertiaTensor;
-        }
+            skipConstraint = false;
 
-        if (body2.dynamic)
-        {
-            body2.linearVelocity += jacobian[2] * accumulatedImpulse * body2.invMass;
-            body2.angularVelocity += jacobian[3] * accumulatedImpulse * body2.invInertiaTensor;
+            Vector3f n = dp;
+            if (n.lengthsqr != 0.0f)
+                n.normalize();
+
+            jacobian[0] = -n;
+            jacobian[1] = -cross(r1, n);
+            jacobian[2] = n;
+            jacobian[3] = cross(r2, n);
+
+            effectiveMass = 
+                body1.invMass + body2.invMass
+              + dot(jacobian[1] * body1.invInertiaTensor, jacobian[1])
+              + dot(jacobian[3] * body2.invInertiaTensor, jacobian[3]);
+
+            softnessOverDt = softness / dt;
+            effectiveMass += softnessOverDt;
+
+            if (effectiveMass != 0)
+                effectiveMass = 1.0f / effectiveMass;
+
+            bias = deltaLength * biasFactor * (1.0f / dt);
+
+            if (body1.dynamic)
+            {
+                body1.linearVelocity +=  jacobian[0] * accumulatedImpulse * body1.invMass;
+                body1.angularVelocity += jacobian[1] * accumulatedImpulse * body1.invInertiaTensor;
+            }
+
+            if (body2.dynamic)
+            {
+                body2.linearVelocity +=  jacobian[2] * accumulatedImpulse * body2.invMass;
+                body2.angularVelocity += jacobian[3] * accumulatedImpulse * body2.invInertiaTensor;
+            }
         }
     }
-    
+
     override void step()
-    {           
-        float jv =
-            dot(body1.linearVelocity, jacobian[0]) +
-            dot(body1.angularVelocity, jacobian[1]) +
-            dot(body2.linearVelocity, jacobian[2]) +
-            dot(body2.angularVelocity, jacobian[3]);
-            
+    {
+        if (skipConstraint)
+            return;
+
+        float jv = 
+            dot(body1.linearVelocity,  jacobian[0])
+          + dot(body1.angularVelocity, jacobian[1])
+          + dot(body2.linearVelocity,  jacobian[2])
+          + dot(body2.angularVelocity, jacobian[3]);
+
         float softnessScalar = accumulatedImpulse * softnessOverDt;
+
         float lambda = -effectiveMass * (jv + bias + softnessScalar);
 
-        accumulatedImpulse += lambda;
-        
-        if (body1.dynamic)
+        if (behavior == DistanceBehavior.LimitMinimumDistance)
         {
-            body1.linearVelocity += jacobian[0] * lambda * body1.invMass;
-            body1.angularVelocity += jacobian[1] * lambda * body1.invInertiaTensor;
+            float previousAccumulatedImpulse = accumulatedImpulse;
+            accumulatedImpulse = max(accumulatedImpulse + lambda, 0);
+            lambda = accumulatedImpulse - previousAccumulatedImpulse;
+        }
+        else if (behavior == DistanceBehavior.LimitMaximumDistance)
+        {
+            float previousAccumulatedImpulse = accumulatedImpulse;
+            accumulatedImpulse = min(accumulatedImpulse + lambda, 0);
+            lambda = accumulatedImpulse - previousAccumulatedImpulse;
+        }
+        else
+        {
+            accumulatedImpulse += lambda;
         }
 
+        if (body1.dynamic)
+        {
+            body1.linearVelocity +=  jacobian[0] * lambda * body1.invMass;
+            body1.angularVelocity += jacobian[1] * lambda * body1.invInertiaTensor;
+        }
         if (body2.dynamic)
         {
-            body2.linearVelocity += jacobian[2] * lambda * body2.invMass;
+            body2.linearVelocity +=  jacobian[2] * lambda * body2.invMass;
             body2.angularVelocity += jacobian[3] * lambda * body2.invInertiaTensor;
         }
     }
@@ -184,8 +223,8 @@ class BallConstraint: Constraint
         Vector3f r2 = body2.orientation.rotate(localAnchor2);
 
         Vector3f p1, p2, dp;
-        p1 = body1.position + r1;
-        p2 = body2.position + r2;
+        p1 = body1.worldCenterOfMass + r1;
+        p2 = body2.worldCenterOfMass + r2;
 
         dp = p2 - p1;
 
@@ -279,8 +318,11 @@ class SliderConstraint: Constraint
         localAnchor1 = lineStartPointBody1;
         localAnchor2 = pointBody2;
 
-        lineNormal = (lineStartPointBody1 + body1.position - 
-                      pointBody2 + body2.position).normalized;
+        lineNormal = (lineStartPointBody1 + body1.worldCenterOfMass) - 
+                     (pointBody2 + body2.worldCenterOfMass);
+
+        if (lineNormal.lengthsqr != 0.0f)
+            lineNormal.normalize();
     }
 
     override void prepare(double delta)
@@ -289,8 +331,8 @@ class SliderConstraint: Constraint
         Vector3f r2 = body2.orientation.rotate(localAnchor2);
 
         Vector3f p1, p2, dp;
-        p1 = body1.position + r1;
-        p2 = body2.position + r2;
+        p1 = body1.worldCenterOfMass + r1;
+        p2 = body2.worldCenterOfMass + r2;
 
         dp = p2 - p1;
 
@@ -361,6 +403,9 @@ class SliderConstraint: Constraint
 }
 
 /*
+ * Constraints bodies so that they always take the same rotation
+ * relative to each other.
+ */
 class AngleConstraint: Constraint
 {
     Vector3f[4] jacobian; 
@@ -395,7 +440,7 @@ class AngleConstraint: Constraint
         Matrix3x3f orientationDifference = Matrix3x3f.identity;
         auto rot1 = body1.orientation.toMatrix3x3;
         auto rot2 = body2.orientation.toMatrix3x3;
-        Matrix3x3f q = orientationDifference * rot2.inverse * rot1;
+        Matrix3x3f q = orientationDifference * rot2 * rot1.inverse;
 
         Vector3f axis;
         float x = q.a32 - q.a23;
@@ -406,7 +451,16 @@ class AngleConstraint: Constraint
         float angle = atan2(r, t - 1);
         axis = Vector3f(x, y, z) * angle;
 
-        if (r != 0.0f) axis = axis * (1.0f / r);
+     /*
+        // Quaternion version doesn't work properly yet
+        Quaternionf qdiff = body2.orientation * body1.orientation.inverse;
+        Vector3f axis = qdiff.rotationAxis;
+        float angle = qdiff.rotationAngle;
+        axis *= angle;
+      */
+
+        //float r = axis.length;
+        //if (r != 0.0f) axis = axis * (1.0f / r);
 
         bias = axis * biasFactor * (-1.0f / dt);
 
@@ -414,7 +468,6 @@ class AngleConstraint: Constraint
             body1.angularVelocity += accumulatedImpulse * body1.invInertiaTensor;
         if (body2.dynamic)
             body2.angularVelocity += -accumulatedImpulse * body2.invInertiaTensor;
-
     }
 
     override void step()
@@ -431,5 +484,4 @@ class AngleConstraint: Constraint
             body2.angularVelocity += -lambda * body2.invInertiaTensor;
     }
 }
-*/
 

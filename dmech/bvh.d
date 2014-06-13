@@ -132,7 +132,7 @@ class BVHNode(T)
     this(T[] objs)
     {
         objects = objs;
-        aabb = enclosingAABB(objects); //boxFromTriangles(objects);
+        aabb = enclosingAABB(objects);
     }
 }
 

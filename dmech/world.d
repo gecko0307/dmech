@@ -195,7 +195,6 @@ class World
 
         findStaticCollisionsBruteForce();
 
-        solveCollisions();
         solveConstraints(dt);
 
         foreach(b; dynamicBodies)
@@ -410,7 +409,7 @@ class World
         }
     }
 
-    void solveCollisions()
+    void solveConstraints(double dt)
     {
         foreach(ref m; manifolds)
         foreach(i; 0..m.numContacts)
@@ -419,8 +418,16 @@ class World
             prepareContact(c, warmstart);
         }
 
+        foreach(c; constraints)
+        {
+            c.prepare(dt);
+        }
+
         foreach(iteration; 0..contactIterations)
         {
+            foreach(c; constraints)
+                c.step();
+
             foreach(ref m; manifolds)
             foreach(i; 0..m.numContacts)
             {
@@ -430,14 +437,5 @@ class World
         }
     }
 
-    void solveConstraints(double dt)
-    {
-        foreach(c; constraints)
-        {
-            c.prepare(dt);
-            for (int i = 0; i < constraintIterations; i++)
-                c.step();
-        }
-    }
 }
 
