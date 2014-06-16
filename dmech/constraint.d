@@ -485,3 +485,34 @@ class AngleConstraint: Constraint
     }
 }
 
+/*
+ * Combination of SliderConstraint and AngleConstraint
+ */
+class PrismaticConstraint: Constraint
+{
+    AngleConstraint ac;
+    SliderConstraint sc;
+
+    this(RigidBody body1, RigidBody body2)
+    {
+        this.body1 = body1;
+        this.body2 = body2;
+
+        ac = new AngleConstraint(body1, body2);
+        sc = new SliderConstraint(body1, body2, 
+            Vector3f(0, 0, 0), Vector3f(0, 0, 0));
+    }
+
+    override void prepare(double dt)
+    {
+        ac.prepare(dt);
+        sc.prepare(dt);
+    }
+
+    override void step()
+    {
+        ac.step();
+        sc.step();
+    }
+}
+

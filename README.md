@@ -17,13 +17,12 @@ Already implemented:
 * Support for any convex shape defined by support mapping
 * Multiple geometries per body
 * Arbitrary static trimeshes (collision detection is optimized via BVH)
-* Simple body constraints: distance, ball-socket, slider, angular
+* Body constraints: distance, angular, slider, ball-socket, prismatic
 * Persistent contact cache
 
 Planned in future:
 * More shapes (capsule, plane, convex hull, etc.)
 * Minkowski sum shape
-* Combined constraints
 * Force fields
 * Kinematic bodies
 * In long-term: vehicle engine, particles, soft-body physics
