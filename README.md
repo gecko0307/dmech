@@ -17,7 +17,7 @@ Already implemented:
 * Support for any convex shape defined by support mapping
 * Multiple geometries per body
 * Arbitrary static trimeshes (collision detection is optimized via BVH)
-* Body constraints: distance, angular, slider, ball-socket, prismatic
+* Body constraints: distance, angular, slider, ball-socket, prismatic, hinge
 * Persistent contact cache
 
 Planned in future:

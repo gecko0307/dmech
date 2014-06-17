@@ -37,7 +37,7 @@ import dlib.math.utils;
 import dmech.rigidbody;
 import dmech.contact;
 
-void prepareContact(Contact* c, bool warmstarting = false)
+void prepareContact(Contact* c)
 {
     RigidBody body1 = c.body1;
     RigidBody body2 = c.body2;
@@ -46,40 +46,33 @@ void prepareContact(Contact* c, bool warmstarting = false)
     Vector3f r2 = c.body2RelPoint; //c.point - body2.worldCenterOfMass;
     
     Vector3f relativeVelocity = Vector3f(0.0f, 0.0f, 0.0f);
-
     relativeVelocity += body1.linearVelocity + cross(body1.angularVelocity, r1);
     relativeVelocity -= body2.linearVelocity + cross(body2.angularVelocity, r2);
-    
     c.initialVelocityProjection = dot(relativeVelocity, c.normal);
 
-    if (warmstarting)
-    {
-        Vector3f impulseVec = c.normal * c.accumulatedImpulse;
-        impulseVec += c.fdir1 * c.accumulatedfImpulse1;
-        impulseVec += c.fdir2 * c.accumulatedfImpulse2;
+    c.n1 = c.normal;
+    c.w1 = c.normal.cross(r1);
+    c.n2 = -c.normal;
+    c.w2 = -c.normal.cross(r2);
 
-        if (body1.dynamic)
-            body1.applyImpulse(+impulseVec, c.point);
-        if (body2.dynamic) 
-            body2.applyImpulse(-impulseVec, c.point);
-    }
+    c.effectiveMass = 
+        body1.invMass + 
+        body2.invMass +
+        dot(c.w1 * body1.invInertiaTensor, c.w1) +
+        dot(c.w2 * body2.invInertiaTensor, c.w2);
 }
 
-void solveContact(Contact* c, bool warmstarting = false)
+void solveContact(Contact* c, double dt)
 {
     RigidBody body1 = c.body1;
     RigidBody body2 = c.body2;
     
     Vector3f r1 = c.body1RelPoint; //c.point - body1.worldCenterOfMass;
     Vector3f r2 = c.body2RelPoint; //c.point - body2.worldCenterOfMass;
-    
-    assert(!isnan(r1.x));
-    assert(!isnan(r2.x));
 
     Vector3f relativeVelocity = Vector3f(0.0f, 0.0f, 0.0f);
     relativeVelocity += body1.linearVelocity + cross(body1.angularVelocity, r1);
     relativeVelocity -= body2.linearVelocity + cross(body2.angularVelocity, r2);
-
     float velocityProjection = dot(relativeVelocity, c.normal);
 
     // Check if the bodies are already moving apart
@@ -87,48 +80,41 @@ void solveContact(Contact* c, bool warmstarting = false)
         return;
 
     // Jacobian
+/*
     Vector3f n1 = c.normal;
     Vector3f w1 = c.normal.cross(r1);
     Vector3f n2 = -c.normal;
     Vector3f w2 = -c.normal.cross(r2);
+*/
 
     float bounce = (body1.bounce + body2.bounce) * 0.5f;
     float damping = 0.9f;
     float C = max(0, -bounce * c.initialVelocityProjection - damping);
 
     float bias = 0.0f;
-/*
-    // Velocity-based position correction
-    float allowedPenetration = 0.01f;
-    float biasFactor = 0.2f; // 0.1 to 0.3
-    float inv_dt = 1.0f / dt;
-    bias = biasFactor * inv_dt * max(0.0f, c.penetration - allowedPenetration);
-*/
-    float a = velocityProjection;
 
+    // Velocity-based position correction
+  /*
+    float allowedPenetration = 0.01f;
+    float biasFactor = 0.3f; // 0.1 to 0.3
+    bias = biasFactor * (1.0f / dt) * max(0.0f, c.penetration - allowedPenetration);
+  */
+    float a = velocityProjection;
+/*
     float b = dot(n1, n1 * body1.invMass)
             + dot(w1, w1 * body1.invInertiaTensor)
             + dot(n2, n2 * body2.invMass)
             + dot(w2, w2 * body2.invInertiaTensor);
+*/
 
-    float normalImpulse = (C - a + bias) / b;
-    
-    assert(!isnan(normalImpulse));
+    float b = c.effectiveMass;
 
-    if (warmstarting)
-    {
-        c.accumulatedImpulse += normalImpulse;
-        if (c.accumulatedImpulse < 0.0f)
-        {
-            normalImpulse += -c.accumulatedImpulse;
-            c.accumulatedImpulse = 0.0f;
-        }
-    }
-    else
-    {
-        if (normalImpulse < 0.0f)
-            normalImpulse = 0.0f;
-    }
+    float normalImpulse;
+
+    normalImpulse = (C - a + bias) / b;
+
+    //if (normalImpulse < 0.0f)
+    //    normalImpulse = 0.0f;
 
     // Friction
     float mu = (body1.friction + body2.friction) * 0.5f;
@@ -188,7 +174,7 @@ void solvePositionError(Contact* c, uint numContacts)
     if (c.penetration <= 0.0f)
         return;
     
-    float ERP = (1.0f / numContacts) * 0.99f;
+    float ERP = (1.0f / numContacts) * 0.99f;// * 0.99f;
     float pc = c.penetration * ERP;
     c.penetration -= pc;
     
@@ -196,19 +182,20 @@ void solvePositionError(Contact* c, uint numContacts)
         return;
         
     // Jacobian
+/*
     Vector3f n1 = c.normal;
     Vector3f w1 = c.normal.cross(r1);
     Vector3f n2 = -c.normal;
     Vector3f w2 = -c.normal.cross(r2);
-
+*/
     float a = pvp;
-
+/*
     float b = dot(n1, n1 * body1.invMass)
             + dot(w1, w1 * body1.invInertiaTensor)
             + dot(n2, n2 * body2.invMass)
             + dot(w2, w2 * body2.invInertiaTensor);
-    
-    float impulse = (pc - a) / b;
+*/
+    float impulse = (pc - a) / c.effectiveMass;
 
     Vector3f impulseVec = c.normal * impulse;
    

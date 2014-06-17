@@ -68,9 +68,9 @@ class World
     bool broadphase = false;
     bool warmstart = false;
 
-    uint contactIterations = 12;
-    uint positionCorrectionIterations = 5;
-    uint constraintIterations = 5;
+    //uint solverIterations = 0;
+    uint positionCorrectionIterations = 10;
+    uint constraintIterations = 20;
     
     BVHNode!Triangle bvhRoot = null;
 
@@ -349,10 +349,8 @@ class World
                     maxPen = contacts[i].penetration;
                 }
                 
-                // Not sure if this is needed
                 //Vector3f dirToContact = (contacts[i].point - rb.position).normalized;
                 //float groundness = dot(gravity.normalized, dirToContact);
-
                 //if (groundness > 0.7f)
                 //    rb.onGround = true;
             }
@@ -415,7 +413,7 @@ class World
         foreach(i; 0..m.numContacts)
         {
             auto c = &m.contacts[i];
-            prepareContact(c, warmstart);
+            prepareContact(c);
         }
 
         foreach(c; constraints)
@@ -423,7 +421,7 @@ class World
             c.prepare(dt);
         }
 
-        foreach(iteration; 0..contactIterations)
+        foreach(iteration; 0..constraintIterations)
         {
             foreach(c; constraints)
                 c.step();
@@ -432,10 +430,9 @@ class World
             foreach(i; 0..m.numContacts)
             {
                 auto c = &m.contacts[i];
-                solveContact(c, warmstart);
+                solveContact(c, dt);
             }
         }
     }
-
 }
 

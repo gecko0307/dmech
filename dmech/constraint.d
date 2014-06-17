@@ -47,7 +47,7 @@ abstract class Constraint
 }
 
 /*
- * Keeps bodies at some fixed distance from each other.
+ * Keeps bodies at some fixed (or max/min) distance from each other.
  * Also works as a spring, if softness is set to a higher value.
  */
 class DistanceConstraint: Constraint
@@ -188,8 +188,7 @@ class DistanceConstraint: Constraint
 }
 
 /*
- * The ball-socket constraint, also known as point to point constraint, 
- * limits the translation so that the local anchor points of two rigid bodies 
+ * Limits the translation so that the local anchor points of two rigid bodies 
  * match in world space.
  */
 class BallConstraint: Constraint
@@ -486,7 +485,118 @@ class AngleConstraint: Constraint
 }
 
 /*
- * Combination of SliderConstraint and AngleConstraint
+ * Constrains two bodies to rotate only around a single axis in worldspace.
+ */
+class AxisAngleConstraint: Constraint
+{
+    Vector3f axis;
+
+    Vector3f localAxis1;
+    Vector3f localAxis2;
+    Vector3f localConstrAxis1;
+    Vector3f localConstrAxis2;
+    Vector3f worldConstrAxis1;
+    Vector3f worldConstrAxis2;
+
+    Vector3f accumulatedImpulse = Vector3f(0, 0, 0);
+
+    float biasFactor = 0.05f;
+    float softness = 0.0f;
+    
+    float softnessOverDt;
+    Matrix3x3f effectiveMass;
+    Vector3f bias;
+
+    this(RigidBody body1, RigidBody body2, Vector3f axis)
+    {
+        this.body1 = body1;
+        this.body2 = body2;
+        this.axis = axis;
+
+        // Axis in body space 
+        this.localAxis1 = axis * body1.orientation.toMatrix3x3.transposed;
+        this.localAxis2 = axis * body2.orientation.toMatrix3x3.transposed;
+
+        localConstrAxis1 = cross(Vector3f(0, 1, 0), localAxis1);
+        if (localConstrAxis1.lengthsqr < 0.001f)
+            localConstrAxis1 = cross(Vector3f(1, 0, 0), localAxis1);
+            
+        localConstrAxis2 = cross(localAxis1, localConstrAxis1);
+        localConstrAxis1.normalize();
+        localConstrAxis2.normalize();
+    }
+
+    override void prepare(double dt)
+    {
+        effectiveMass = body1.invInertiaTensor + body2.invInertiaTensor;
+
+        softnessOverDt = softness / dt;
+
+        effectiveMass.a11 += softnessOverDt;
+        effectiveMass.a22 += softnessOverDt;
+        effectiveMass.a33 += softnessOverDt;
+
+        effectiveMass = effectiveMass.inverse;
+
+        auto rot1 = body1.orientation.toMatrix3x3;
+        auto rot2 = body2.orientation.toMatrix3x3;
+
+        Vector3f worldAxis1 = localAxis1 * rot1;
+        Vector3f worldAxis2 = localAxis2 * rot2;
+
+        worldConstrAxis1 = localConstrAxis1 * rot1;
+        worldConstrAxis2 = localConstrAxis2 * rot2;
+
+        Vector3f error = cross(worldAxis1, worldAxis2);
+
+        Vector3f errorAxis = Vector3f(0, 0, 0);
+        errorAxis.x = dot(error, worldConstrAxis1);
+        errorAxis.y = dot(error, worldConstrAxis2);
+
+        bias = errorAxis * biasFactor * (-1.0f / dt);
+
+        Vector3f impulse;
+        impulse.x = worldConstrAxis1.x * accumulatedImpulse.x 
+                  + worldConstrAxis2.x * accumulatedImpulse.y;
+        impulse.y = worldConstrAxis1.y * accumulatedImpulse.x 
+                  + worldConstrAxis2.y * accumulatedImpulse.y;
+        impulse.z = worldConstrAxis1.z * accumulatedImpulse.x 
+                  + worldConstrAxis2.z * accumulatedImpulse.y;
+
+        if (body1.dynamic)
+            body1.angularVelocity += impulse * body1.invInertiaTensor;
+        if (body2.dynamic)
+            body2.angularVelocity += -impulse * body2.invInertiaTensor;
+    }
+
+    override void step()
+    {
+        Vector3f vd = body1.angularVelocity - body2.angularVelocity;
+        Vector3f jv = Vector3f(0, 0, 0);
+        jv.x = dot(vd, worldConstrAxis1);
+        jv.y = dot(vd, worldConstrAxis2);
+
+        Vector3f softnessVector = accumulatedImpulse * softnessOverDt;
+
+        Vector3f lambda = -(jv + bias + softnessVector) * effectiveMass;
+        accumulatedImpulse += lambda;
+
+        Vector3f impulse;
+        impulse.x = worldConstrAxis1.x * lambda.x + worldConstrAxis2.x * lambda.y;
+        impulse.y = worldConstrAxis1.y * lambda.x + worldConstrAxis2.y * lambda.y;
+        impulse.z = worldConstrAxis1.z * lambda.x + worldConstrAxis2.z * lambda.y;
+
+        if (body1.dynamic)
+            body1.angularVelocity += impulse * body1.invInertiaTensor;
+        if (body2.dynamic)
+            body2.angularVelocity += -impulse * body2.invInertiaTensor;
+    }
+}
+
+/*
+ * Combination of SliderConstraint and AngleConstraint.
+ * Restrics 5 degrees of freedom so that bodies can only move in one direction
+ * relative to each other.
  */
 class PrismaticConstraint: Constraint
 {
@@ -513,6 +623,43 @@ class PrismaticConstraint: Constraint
     {
         ac.step();
         sc.step();
+    }
+}
+
+/*
+ * Combination of BallConstraint and AxisAngleConstraint.
+ * Restricts 5 degrees of freedom, so the bodies are fixed relative to
+ * anchor point and can only rotate around one axis.
+ * This can be useful to represent doors or wheels.
+ */
+class HingeConstraint: Constraint
+{
+    AxisAngleConstraint aac;
+    BallConstraint bc;
+
+    this(RigidBody body1, 
+         RigidBody body2, 
+         Vector3f anchor1,
+         Vector3f anchor2, 
+         Vector3f axis)
+    {
+        this.body1 = body1;
+        this.body2 = body2;
+
+        aac = new AxisAngleConstraint(body1, body2, axis);
+        bc = new BallConstraint(body1, body2, anchor1, anchor2);
+    }
+
+    override void prepare(double dt)
+    {
+        aac.prepare(dt);
+        bc.prepare(dt);
+    }
+
+    override void step()
+    {
+        aac.step();
+        bc.step();
     }
 }
 

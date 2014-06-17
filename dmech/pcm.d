@@ -52,7 +52,7 @@ struct PersistentContactManifold
         for (uint i = 0; i < numContacts; i++)
         {
             float d = distance(c.point, contacts[i].point);
-            farEnough = farEnough && (d > 0.1f);
+            farEnough = farEnough && (d > 0.1f); //0.1f
         }
 
         if (farEnough)
@@ -79,7 +79,7 @@ struct PersistentContactManifold
 
             float d = distance(p1, p2);
 
-            if (d > 0.14f) //0.15f
+            if (d > 0.15f) //0.14f
             {
                 this.removeContact(i);
             }

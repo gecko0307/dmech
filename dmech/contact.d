@@ -59,7 +59,13 @@ struct Contact
     Vector3f fdir1;
     Vector3f fdir2;
 
+    Vector3f n1;
+    Vector3f w1;
+    Vector3f n2;
+    Vector3f w2;
+
     float initialVelocityProjection;
+    float effectiveMass;
 
     float accumulatedImpulse = 0.0f;
     float accumulatedfImpulse1 = 0.0f;
