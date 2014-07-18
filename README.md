@@ -24,7 +24,7 @@ Planned in future:
 * More shapes (capsule, plane, convex hull, etc.)
 * Minkowski sum shape
 * Force fields
-* Kinematic bodies
+* Ray cast and convex cast
 * In long-term: vehicle engine, particles, soft-body physics
 
 Dependencies
