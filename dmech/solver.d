@@ -42,8 +42,8 @@ void prepareContact(Contact* c)
     RigidBody body1 = c.body1;
     RigidBody body2 = c.body2;
     
-    Vector3f r1 = c.body1RelPoint; //c.point - body1.worldCenterOfMass;
-    Vector3f r2 = c.body2RelPoint; //c.point - body2.worldCenterOfMass;
+    Vector3f r1 = c.body1RelPoint;
+    Vector3f r2 = c.body2RelPoint;
     
     Vector3f relativeVelocity = Vector3f(0.0f, 0.0f, 0.0f);
     relativeVelocity += body1.linearVelocity + cross(body1.angularVelocity, r1);
@@ -67,8 +67,8 @@ void solveContact(Contact* c, double dt)
     RigidBody body1 = c.body1;
     RigidBody body2 = c.body2;
     
-    Vector3f r1 = c.body1RelPoint; //c.point - body1.worldCenterOfMass;
-    Vector3f r2 = c.body2RelPoint; //c.point - body2.worldCenterOfMass;
+    Vector3f r1 = c.body1RelPoint;
+    Vector3f r2 = c.body2RelPoint;
 
     Vector3f relativeVelocity = Vector3f(0.0f, 0.0f, 0.0f);
     relativeVelocity += body1.linearVelocity + cross(body1.angularVelocity, r1);
@@ -78,14 +78,6 @@ void solveContact(Contact* c, double dt)
     // Check if the bodies are already moving apart
     if (velocityProjection > 0.0f)
         return;
-
-    // Jacobian
-/*
-    Vector3f n1 = c.normal;
-    Vector3f w1 = c.normal.cross(r1);
-    Vector3f n2 = -c.normal;
-    Vector3f w2 = -c.normal.cross(r2);
-*/
 
     float bounce = (body1.bounce + body2.bounce) * 0.5f;
     float damping = 0.9f;
@@ -100,18 +92,9 @@ void solveContact(Contact* c, double dt)
     bias = biasFactor * (1.0f / dt) * max(0.0f, c.penetration - allowedPenetration);
   */
     float a = velocityProjection;
-/*
-    float b = dot(n1, n1 * body1.invMass)
-            + dot(w1, w1 * body1.invInertiaTensor)
-            + dot(n2, n2 * body2.invMass)
-            + dot(w2, w2 * body2.invInertiaTensor);
-*/
-
     float b = c.effectiveMass;
 
-    float normalImpulse;
-
-    normalImpulse = (C - a + bias) / b;
+    float normalImpulse = (C - a + bias) / b;
 
     //if (normalImpulse < 0.0f)
     //    normalImpulse = 0.0f;
@@ -150,12 +133,11 @@ void solveContact(Contact* c, double dt)
     fVec = c.fdir1 * fImpulse1 + c.fdir2 * fImpulse2;
 
     Vector3f impulseVec = c.normal * normalImpulse;
+
     impulseVec += fVec;
 
-    if (body1.dynamic) 
-        body1.applyImpulse(+impulseVec, c.point);
-    if (body2.dynamic) 
-        body2.applyImpulse(-impulseVec, c.point);
+    body1.applyImpulse(+impulseVec, c.point);
+    body2.applyImpulse(-impulseVec, c.point);
 }
 
 void solvePositionError(Contact* c, uint numContacts)
@@ -163,8 +145,8 @@ void solvePositionError(Contact* c, uint numContacts)
     RigidBody body1 = c.body1;
     RigidBody body2 = c.body2;
     
-    Vector3f r1 = c.body1RelPoint; //c.point - body1.worldCenterOfMass;
-    Vector3f r2 = c.body2RelPoint; //c.point - body2.worldCenterOfMass;
+    Vector3f r1 = c.body1RelPoint;
+    Vector3f r2 = c.body2RelPoint;
        
     Vector3f prv = Vector3f(0.0f, 0.0f, 0.0f);
     prv += body1.pseudoLinearVelocity + cross(body1.pseudoAngularVelocity, r1);
@@ -174,34 +156,19 @@ void solvePositionError(Contact* c, uint numContacts)
     if (c.penetration <= 0.0f)
         return;
     
-    float ERP = (1.0f / numContacts) * 0.99f;// * 0.99f;
+    float ERP = (1.0f / numContacts) * 0.99f;
     float pc = c.penetration * ERP;
     c.penetration -= pc;
     
     if (pvp >= pc)
         return;
-        
-    // Jacobian
-/*
-    Vector3f n1 = c.normal;
-    Vector3f w1 = c.normal.cross(r1);
-    Vector3f n2 = -c.normal;
-    Vector3f w2 = -c.normal.cross(r2);
-*/
+
     float a = pvp;
-/*
-    float b = dot(n1, n1 * body1.invMass)
-            + dot(w1, w1 * body1.invInertiaTensor)
-            + dot(n2, n2 * body2.invMass)
-            + dot(w2, w2 * body2.invInertiaTensor);
-*/
     float impulse = (pc - a) / c.effectiveMass;
 
     Vector3f impulseVec = c.normal * impulse;
    
-    if (body1.dynamic)
-        body1.applyPseudoImpulse(+impulseVec, c.point);
-    if (body2.dynamic)
-        body2.applyPseudoImpulse(-impulseVec, c.point);
+    body1.applyPseudoImpulse(+impulseVec, c.point);
+    body2.applyPseudoImpulse(-impulseVec, c.point);
 }
 

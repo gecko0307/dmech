@@ -68,7 +68,6 @@ class World
     bool broadphase = false;
     bool warmstart = false;
 
-    //uint solverIterations = 0;
     uint positionCorrectionIterations = 10;
     uint constraintIterations = 20;
     
@@ -183,7 +182,13 @@ class World
         foreach(b; dynamicBodies)
         {
             b.updateInertia();
-            b.applyForce(gravity * b.mass);
+            if (b.useGravity)
+            {
+                if (b.useOwnGravity)
+                    b.applyForce(b.gravity * b.mass);
+                else
+                    b.applyForce(gravity * b.mass);
+            }
             b.integrateForces(dt);
             b.resetForces();
         }
@@ -366,6 +371,9 @@ class World
                     PersistentContactManifold m1;
                     m1.addContact(*co);
                     manifolds.set(shape.id, proxyTriShape.id, m1);
+
+                    c.body1.contactEvent(c);
+                    c.body2.contactEvent(c);
                 }
                 else
                 {
@@ -395,6 +403,9 @@ class World
                 PersistentContactManifold m1;
                 m1.addContact(c);
                 manifolds.set(shape1.id, shape2.id, m1);
+
+                c.body1.contactEvent(c);
+                c.body2.contactEvent(c);
             }
             else
             {

@@ -30,6 +30,7 @@ module dmech.pcm;
 
 import dlib.math.vector;
 import dmech.contact;
+import dmech.rigidbody;
 
 /*
  * Persistent contact manifold.

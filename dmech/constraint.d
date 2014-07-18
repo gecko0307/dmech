@@ -500,7 +500,7 @@ class AxisAngleConstraint: Constraint
 
     Vector3f accumulatedImpulse = Vector3f(0, 0, 0);
 
-    float biasFactor = 0.05f;
+    float biasFactor = 0.4f;
     float softness = 0.0f;
     
     float softnessOverDt;

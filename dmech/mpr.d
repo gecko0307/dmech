@@ -202,8 +202,8 @@ bool MPRCollisionTest(
             c.normal = cross(v2 - v1, v3 - v1);
                 
             // Can this happen? Can it be handled more cleanly?
-            if (c.normal.isAlmostZero)
-                return true;
+            //if (c.normal.isAlmostZero)
+            //    return true;
                     
             c.normal.normalize();
                 

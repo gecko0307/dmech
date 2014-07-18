@@ -37,6 +37,7 @@ import dlib.math.affine;
 import dlib.math.utils;
 
 import dmech.shape;
+import dmech.contact;
 
 class RigidBody
 {
@@ -66,6 +67,9 @@ class RigidBody
     float bounce;
     float friction;
 
+    bool useGravity = true;
+    bool enableRotation = true;
+
     ShapeComponent[] shapes;
 
     bool dynamic;
@@ -73,6 +77,20 @@ class RigidBody
     float damping = 0.5f;
     float stopThreshold = 0.15f; //0.15f
     float stopThresholdPV = 0.0f; //0.01f
+
+    bool useOwnGravity = false;
+    Vector3f gravity = Vector3f(0, 0, 0);
+
+    alias void delegate(RigidBody, Contact) contactFunc;
+    contactFunc[] onNewContact;
+
+    void contactEvent(Contact c)
+    {
+        foreach(f; onNewContact)
+        {
+            f(this, c);
+        }
+    }
 
     this()
     {
@@ -130,7 +148,7 @@ class RigidBody
             return;
 
         centerOfMass = Vector3f(0, 0, 0);
-        float m = 0;
+        float m = 0.0f;
 
         foreach (sh; shapes)
         {
@@ -141,8 +159,8 @@ class RigidBody
         float invm = 1.0f / m;
         centerOfMass *= invm;
 
-        mass = m;
-        invMass = invm;
+        mass += shape.mass;
+        invMass = 1.0f / mass;
 
         // Compute inertia tensor using Huygens-Steiner theorem
         inertiaTensor = Matrix3x3f.zero;
@@ -163,10 +181,12 @@ class RigidBody
             return;
 
         linearAcceleration = forceAccumulator * invMass;
-        angularAcceleration = torqueAccumulator * invInertiaTensor;
-        
+        if (enableRotation)
+            angularAcceleration = torqueAccumulator * invInertiaTensor;
+
         linearVelocity += linearAcceleration * dt;
-        angularVelocity += angularAcceleration * dt;
+        if (enableRotation)
+            angularVelocity += angularAcceleration * dt;
     }
 
     void integrateVelocities(float dt)
@@ -174,24 +194,21 @@ class RigidBody
         if (!dynamic)
             return;
 
-        linearVelocity *= clamp(1.0f - dt * damping, 0.0f, 1.0f);
-        angularVelocity *= clamp(1.0f - dt * damping, 0.0f, 1.0f);
-
+        float d = clamp(1.0f - dt * damping, 0.0f, 1.0f);
+        linearVelocity *= d;
+        angularVelocity *= d;
+        
         if (linearVelocity.length > stopThreshold)
         {
             position += linearVelocity * dt;
-            position += pseudoLinearVelocity * dt;
         }
+
+        if (enableRotation)
         if (angularVelocity.length > stopThreshold)
         {
             orientation += 0.5f * Quaternionf(angularVelocity, 0.0f) * orientation * dt;
             orientation.normalize();
-            orientation += 0.5f * Quaternionf(pseudoAngularVelocity, 0.0f) * orientation * dt;
-            orientation.normalize();
         }
-
-        pseudoLinearVelocity = Vector3f(0.0f, 0.0f, 0.0f);
-        pseudoAngularVelocity = Vector3f(0.0f, 0.0f, 0.0f);
     }
 
     void integratePseudoVelocities(float dt)
@@ -199,13 +216,17 @@ class RigidBody
         if (!dynamic)
             return;
 
-        pseudoLinearVelocity *= clamp(1.0f - dt * damping, 0.0f, 1.0f);
-        pseudoAngularVelocity *= clamp(1.0f - dt * damping, 0.0f, 1.0f);
+        float d = clamp(1.0f - dt * damping, 0.0f, 1.0f);
+
+        pseudoLinearVelocity *= d;
+        pseudoAngularVelocity *= d;
 
         if (pseudoLinearVelocity.length > stopThresholdPV)
         {
             position += pseudoLinearVelocity;
         }
+
+        if (enableRotation)
         if (pseudoAngularVelocity.length > stopThresholdPV)
         {
             orientation += 0.5f * Quaternionf(pseudoAngularVelocity, 0.0f) * orientation;
@@ -264,8 +285,6 @@ class RigidBody
     {
         if (!dynamic)
             return;
-
-        assert(!isnan(impulse.x));
 
         linearVelocity += impulse * invMass;
         Vector3f angularImpulse = cross(point - worldCenterOfMass, impulse);
