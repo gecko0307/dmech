@@ -1,6 +1,6 @@
 dmech
 =====
-dmech is a real-time 3D physics engine written in D language. It is more suitable for computer games than scientific simulations: the goal is to convince a player, rather than giving accurate results. Currently dmech is in early stages of development and not considered for production use.
+dmech stands for "D mechanics": it is a real-time 3D physics engine written in D language, capable of simulating classic rigid body mechanics. It is more suitable for computer games than scientific simulations: the goal is to convince a player, rather than giving accurate results. Currently dmech is in early stages of development and not considered for production use.
 
 Screenshots
 -----------
