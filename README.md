@@ -1,6 +1,6 @@
 dmech
 =====
-dmech is a real-time 3D physics engine written in D language. It is more suitable for computer games than scientific simulations: the goal is to convince a player, rather than giving accurate results. Currently dmech is in early stages of development, not considered for production use.
+dmech is a real-time 3D physics engine written in D language. It is more suitable for computer games than scientific simulations: the goal is to convince a player, rather than giving accurate results. Currently dmech is in early stages of development and not considered for production use.
 
 Screenshots
 -----------
@@ -19,12 +19,13 @@ Already implemented:
 * Arbitrary static trimeshes (collision detection is optimized via BVH)
 * Body constraints: distance, angular, slider, ball-socket, prismatic, hinge
 * Persistent contact cache
+* Ray cast support
 
 Planned in future:
 * More shapes (capsule, plane, convex hull, etc.)
 * Minkowski sum shape
 * Force fields
-* Ray cast and convex cast
+* Convex cast
 * In long-term: vehicle engine, particles, soft-body physics
 
 Dependencies

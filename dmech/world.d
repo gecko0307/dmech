@@ -29,6 +29,7 @@ DEALINGS IN THE SOFTWARE.
 module dmech.world;
 
 import std.math;
+import std.range;
 
 import dlib.math.vector;
 import dlib.math.matrix;
@@ -47,13 +48,14 @@ import dmech.pcm;
 import dmech.constraint;
 import dmech.bvh;
 import dmech.mpr;
+import dmech.raycast;
 
 /*
  * World object stores bodies and constraints and performs
  * simulation cycles on them.
  */
 
-class World
+class PhysicsWorld
 {
     RigidBody[] staticBodies;
     RigidBody[] dynamicBodies;
@@ -220,6 +222,37 @@ class World
             b.integratePseudoVelocities(dt);
             b.updateShapeComponents();
         }
+    }
+
+    bool raycast(
+        Vector3f rayStart, 
+        Vector3f rayDir, 
+        float maxRayDist, 
+        out CastResult castResult)
+    {
+        bool res = false;
+        float bestParam = float.max;
+        CastResult cr;
+
+        foreach(b; chain(staticBodies, dynamicBodies))
+        foreach(shape; b.shapes)
+        {
+            bool hit = convexRayCast(shape, rayStart, rayDir, maxRayDist, cr);
+            if (hit)
+            {
+                if (cr.param < bestParam)
+                {
+                    bestParam = cr.param;
+                    castResult = cr;
+                    castResult.rbody = b;
+                    res = true;
+                }
+            }
+        }
+
+        // TODO: BVH/trimesh ray query
+
+        return res;
     }
 
     void findDynamicCollisionsBruteForce()
