@@ -36,6 +36,7 @@ import dlib.math.matrix;
 import dlib.math.affine;
 import dlib.geometry.triangle;
 import dlib.geometry.sphere;
+import dlib.geometry.ray;
 
 import dmech.rigidbody;
 import dmech.geometry;
@@ -227,16 +228,20 @@ class PhysicsWorld
     bool raycast(
         Vector3f rayStart, 
         Vector3f rayDir, 
-        float maxRayDist, 
-        out CastResult castResult)
+        float maxRayDist,
+        out CastResult castResult,
+        bool checkAgainstBodies = true,
+        bool checkAgainstBVH = true)
     {
         bool res = false;
         float bestParam = float.max;
 
+        CastResult cr;
+
+        if (checkAgainstBodies)
         foreach(b; chain(staticBodies, dynamicBodies))
         foreach(shape; b.shapes)
         {
-            CastResult cr;
             bool hit = convexRayCast(shape, rayStart, rayDir, maxRayDist, cr);
             if (hit)
             {
@@ -250,7 +255,32 @@ class PhysicsWorld
             }
         }
 
-        // TODO: BVH/trimesh ray query
+        if (!checkAgainstBVH)
+            return res;
+
+        Ray ray = Ray(rayStart, rayStart + rayDir * maxRayDist);
+
+        if (bvhRoot !is null)
+        bvhRoot.traverseByRay(ray, (ref Triangle tri)
+        {
+            Vector3f ip;
+            bool hit = ray.intersectTriangle(tri.v[0], tri.v[1], tri.v[2], ip);
+            if (hit)
+            {
+                float param = distance(rayStart, ip);
+                if (param < bestParam)
+                {
+                    bestParam = param;
+                    castResult.fact = true;
+                    castResult.param = param;
+                    castResult.point = ip;
+                    castResult.normal = tri.normal;
+                    castResult.rbody = proxyTri;
+                    castResult.shape = null;
+                    res = true;
+                }
+            }
+        });
 
         return res;
     }
