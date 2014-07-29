@@ -40,6 +40,7 @@ import dmech.contact;
  * Implementation of the Minkowski Portal Refinement algorithm
  */
 
+// TODO: use ShapeComponent.supportPointGlobal instead of this
 void supportTransformed(ShapeComponent s, Vector3f dir, out Vector3f result)
 {
     Matrix4x4f m = s.transformation;

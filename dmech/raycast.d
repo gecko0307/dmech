@@ -47,23 +47,20 @@ struct CastResult
     ShapeComponent shape;
 }
 
+// TODO: warmstarting
+
 bool convexRayCast(
     ShapeComponent shape,
-    Vector3f wRaySource,
-    Vector3f wRayDir,
+    Vector3f rayStart,
+    Vector3f rayDir,
     float maxCastDistance,
     out CastResult res)
-{
-    Matrix4x4f shapeTransform = shape.transformation;
-
-    Vector3f lRaySource = wRaySource * shapeTransform.inverse;
-    Vector3f lRayDir = wRayDir * matrix4x4to3x3(shapeTransform).inverse;
-    
+{   
     float hitParam = 0;
-    Vector3f hitPoint = lRaySource;
+    Vector3f hitPoint = rayStart;
     Vector3f hitNormal = Vector3f(0, 0, 0);
     
-    Vector3f v = hitPoint - shape.geometry.supportPoint(Vector3f(0, 0, 0));
+    Vector3f v = hitPoint - shape.supportPointGlobal(Vector3f(0, 0, 0));
     float vSqrd = v.lengthsqr;
     
     Vector3f p = Vector3f(0, 0, 0);
@@ -75,72 +72,60 @@ bool convexRayCast(
     JohnsonSimplexSolver jss;
     jss.initialize();
     
-    float e_tol = EPSILON * 100;
+    float eps = EPSILON * 100;
     
-    uint nbIterations = 0;
-    uint nbMaxIterations = 1000;
+    uint iterations = 0;
+    uint maxIterations = 1000;
     
     bool hit = false;
     
     while(true)
     {
-        if ((vSqrd <= e_tol * jss.getMaxVertexSqrd) || jss.isFullSimplex)
+        if ((vSqrd <= eps * jss.getMaxVertexSqrd) || jss.isFullSimplex)
         {
             hit = true;
             break;
         }
         
         if (hitParam > maxCastDistance)
-        {
             break;
-        }
         
-        if (nbIterations >= nbMaxIterations)
-        {
-            return false;
-        }
+        if (iterations >= maxIterations)
+            break;
         
-        p = shape.geometry.supportPoint(v);
+        p = shape.supportPointGlobal(v);
         w = hitPoint - p;
 
         v_dot_w = dot(v, w);
         
         if ( v_dot_w > 0 )
         {
-            v_dot_r = dot(v, lRayDir);
+            v_dot_r = dot(v, rayDir);
 
             if (v_dot_r >= 0)
-            {
                 break;
-            }
 
             hitParam  = hitParam - v_dot_w / v_dot_r;
-            hitPoint  = lRaySource + lRayDir * hitParam;
+            hitPoint  = rayStart + rayDir * hitParam;
             hitNormal = v;
             
             if (!jss.isEmptySimplex)
             {
                 for (byte i = 0; i < 4; ++i)
-                {
                     if (jss.isSimplexPoint(i))
                         jss.setPoint(i, 
                             hitPoint - jss.getSupportPointOnB(i), 
                             hitPoint,  jss.getSupportPointOnB(i));
-                }
                 
                 jss.updateMaxVertex();
 
                 for (byte i = 0; i < 4; ++i)
-                {
                     if (jss.isSimplexPoint(i))
                         jss.updateEdges(i);
-                }
 
                 for (byte i = 0; i < 4; ++i)
-                {
                     if (jss.isSimplexPoint(i))
                         jss.updateDeterminants(i);
-                }
             }
         }
         
@@ -153,14 +138,14 @@ bool convexRayCast(
             jss.backupCalcClosestPoint(v);
             
         vSqrd = v.lengthsqr;
-        ++nbIterations;
+        ++iterations;
     }
     
     if (hit)
     {
         res.fact = true;
-        res.point = hitPoint * shapeTransform;
-        res.normal = hitNormal * shapeTransform;
+        res.point = hitPoint;
+        res.normal = hitNormal;
         res.normal.normalize();
         res.param = hitParam;
     }

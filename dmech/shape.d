@@ -99,5 +99,27 @@ class ShapeComponent
             _transformation.translation);
         return Sphere(aabb.center, aabb.size.length);
     }
+
+    Vector3f supportPointGlobal(Vector3f dir)
+    {
+        Vector3f result;
+        Matrix4x4f* m = &_transformation;
+
+        result.x = ((dir.x * m.a11) + (dir.y * m.a21)) + (dir.z * m.a31);
+        result.y = ((dir.x * m.a12) + (dir.y * m.a22)) + (dir.z * m.a32);
+        result.z = ((dir.x * m.a13) + (dir.y * m.a23)) + (dir.z * m.a33);
+
+        result = geometry.supportPoint(result);
+
+        float x = ((result.x * m.a11) + (result.y * m.a12)) + (result.z * m.a13);
+        float y = ((result.x * m.a21) + (result.y * m.a22)) + (result.z * m.a23);
+        float z = ((result.x * m.a31) + (result.y * m.a32)) + (result.z * m.a33);
+
+        result.x = m.a14 + x;
+        result.y = m.a24 + y;
+        result.z = m.a34 + z;
+
+        return result;
+    }
 }
 

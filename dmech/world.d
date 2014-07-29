@@ -232,11 +232,11 @@ class PhysicsWorld
     {
         bool res = false;
         float bestParam = float.max;
-        CastResult cr;
 
         foreach(b; chain(staticBodies, dynamicBodies))
         foreach(shape; b.shapes)
         {
+            CastResult cr;
             bool hit = convexRayCast(shape, rayStart, rayDir, maxRayDist, cr);
             if (hit)
             {
