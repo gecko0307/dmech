@@ -436,6 +436,29 @@ class AngleConstraint: Constraint
 
         effectiveMass = effectiveMass.inverse;
 
+        // TODO: move axis/angle stuff to Quaternion implementation
+        Quaternionf qdiff = body2.orientation * body1.orientation.inverse;
+        if (qdiff.w > 1.0f)
+            qdiff.normalize();
+        float angle = 2.0f * acos(qdiff.w);
+        float s = sqrt(1.0f - qdiff.w * qdiff.w);
+        Vector3f axis;
+        if (s <= 0.0f)
+        {
+            axis.x = qdiff.x;
+            axis.y = qdiff.y;
+            axis.z = qdiff.z;
+        }
+        else
+        {
+            axis.x = qdiff.x / s;
+            axis.y = qdiff.y / s;
+            axis.z = qdiff.z / s;
+        }
+        axis *= angle;
+
+/*
+        // Matrix version
         Matrix3x3f orientationDifference = Matrix3x3f.identity;
         auto rot1 = body1.orientation.toMatrix3x3;
         auto rot2 = body2.orientation.toMatrix3x3;
@@ -449,17 +472,7 @@ class AngleConstraint: Constraint
         float t = q.a11 + q.a22 + q.a33;
         float angle = atan2(r, t - 1);
         axis = Vector3f(x, y, z) * angle;
-
-     /*
-        // Quaternion version doesn't work properly yet
-        Quaternionf qdiff = body2.orientation * body1.orientation.inverse;
-        Vector3f axis = qdiff.rotationAxis;
-        float angle = qdiff.rotationAngle;
-        axis *= angle;
-      */
-
-        //float r = axis.length;
-        //if (r != 0.0f) axis = axis * (1.0f / r);
+*/
 
         bias = axis * biasFactor * (-1.0f / dt);
 
