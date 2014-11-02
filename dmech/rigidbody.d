@@ -92,6 +92,8 @@ class RigidBody
         }
     }
 
+    bool raycastable = true;
+
     this()
     {
         position = Vector3f(0.0f, 0.0f, 0.0f);
@@ -125,7 +127,7 @@ class RigidBody
         forceAccumulator = Vector3f(0.0f, 0.0f, 0.0f);
         torqueAccumulator = Vector3f(0.0f, 0.0f, 0.0f);
 
-        bounce = 0.5f;
+        bounce = 0.0f;
         friction = 0.9f;
 
         dynamic = true;

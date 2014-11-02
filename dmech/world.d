@@ -83,7 +83,7 @@ class PhysicsWorld
 
     this(size_t maxCollisions = 1000)
     {
-        gravity = Vector3f(0.0f, -9.80665f, 0.0f); // Earth
+        gravity = Vector3f(0.0f, -9.80665f, 0.0f); // Earth -9.80665f
 
         manifolds = new PairHashTable!PersistentContactManifold(maxCollisions);
         
@@ -240,6 +240,7 @@ class PhysicsWorld
 
         if (checkAgainstBodies)
         foreach(b; chain(staticBodies, dynamicBodies))
+        if (b.raycastable)
         foreach(shape; b.shapes)
         {
             bool hit = convexRayCast(shape, rayStart, rayDir, maxRayDist, cr);
