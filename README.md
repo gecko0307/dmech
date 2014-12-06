@@ -7,6 +7,7 @@ Screenshots
 [![Screenshot1](/images/screenshot1_thumb.jpg)](/images/screenshot1.jpg)
 [![Screenshot2](/images/screenshot2_thumb.jpg)](/images/screenshot2.jpg)
 [![Screenshot3](/images/screenshot3_thumb.jpg)](/images/screenshot3.jpg)
+[![Screenshot4](/images/screenshot4_thumb.jpg)](/images/screenshot4.jpg)
 
 Features
 --------
@@ -34,7 +35,7 @@ dmech heavily relies on [dlib](http://github.com/gecko0307/dlib) - a collection 
 
 Usage examples
 --------------
-See "demos" directory. All examples use [DGL](http://github.com/gecko0307/dgl) for rendering.
+See [demos](/demos) directory. All examples use [DGL](http://github.com/gecko0307/dgl) for rendering.
 
 License
 -------
