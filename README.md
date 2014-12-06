@@ -30,7 +30,11 @@ Planned in future:
 
 Dependencies
 ------------
-dmech heavily relies on [dlib](http://github.com/gecko0307/dlib) - a collection of utility libraries for D, including linear math and computational geometry functionality (it is recommended to use master, because dmech usually depends on latest repository changes). The demo uses [DGL](http://github.com/gecko0307/dgl) for rendering.
+dmech heavily relies on [dlib](http://github.com/gecko0307/dlib) - a collection of utility libraries for D, including linear math and computational geometry functionality (it is recommended to use master, because dmech usually depends on latest repository changes).
+
+Usage examples
+--------------
+See "demos" directory. All examples use [DGL](http://github.com/gecko0307/dgl) for rendering.
 
 License
 -------
