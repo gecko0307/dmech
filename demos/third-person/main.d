@@ -1,5 +1,7 @@
 module main;
 
+import std.string;
+
 import derelict.sdl.sdl;
 import derelict.opengl.gl;
 import derelict.opengl.glu;
@@ -12,7 +14,6 @@ import dgl.core.application;
 import dgl.core.layer;
 import dgl.ui.ftfont;
 import dgl.ui.textline;
-import dgl.ui.i18n;
 import dgl.templates.freeview;
 
 import gamelayer;
@@ -68,7 +69,7 @@ class GameApp: Application
     override void onUpdate()
     {
         super.onUpdate();
-        fpsText.setText(localizef("FPS: %s", fps));
+        fpsText.setText(format("FPS: %s", fps));
     }
 }
 
@@ -94,7 +95,6 @@ void loadLibraries()
 void main()
 {
     loadLibraries();
-    Locale.readLang("locale");
     auto app = new GameApp();
     app.run();
 }
