@@ -436,7 +436,7 @@ class AngleConstraint: Constraint
 
         effectiveMass = effectiveMass.inverse;
 
-        Quaternionf dq = body2.orientation * body1.orientation.inverse;
+        Quaternionf dq = body2.orientation * body1.orientation.conj;
         Vector3f axis = dq.generator;
 /*
         // Matrix version
