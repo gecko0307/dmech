@@ -45,7 +45,7 @@ class GameApp: Application
 
         font = new FreeTypeFont("data/fonts/droid/DroidSans.ttf", 27);
 
-        fpsText = new TextLine(font, localizef("FPS: %s", fps), Vector2f(10, 10));
+        fpsText = new TextLine(font, format("FPS: %s", fps), Vector2f(10, 10));
         fpsText.alignment = Alignment.Left;
         fpsText.color = Color4f(1, 1, 1);
         layer2d.addDrawable(fpsText);
