@@ -20,7 +20,7 @@ import physobject;
 
 class PhysicsLayer: Layer
 {
-    World world;
+    PhysicsWorld world;
     RigidBody activeBody;
 
     TrackballCamera camera;
@@ -30,7 +30,7 @@ class PhysicsLayer: Layer
         super(0, 0, w, h, LayerType.Layer3D, depth);
         alignToWindow = true;
 
-        world = new World();
+        world = new PhysicsWorld();
         auto geomFloorBox = new GeomBox(Vector3f(100, 1, 100));
         RigidBody bFloor = world.addStaticBody(Vector3f(0, -1, 0));
         world.addShapeComponent(bFloor, geomFloorBox, Vector3f(0, 0, 0), 1);

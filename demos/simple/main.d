@@ -2,9 +2,12 @@ module main;
 
 import std.stdio;
 import std.conv;
+import std.string;
 
 import derelict.sdl.sdl;
 import derelict.opengl.gl;
+import derelict.opengl.glu;
+import derelict.freetype.ft;
 
 import dlib.math.vector;
 import dlib.image.color;
@@ -14,10 +17,10 @@ import dgl.core.layer;
 import dgl.core.drawable;
 import dgl.graphics.shapes;
 import dgl.scene.tbcamera;
-import dgl.ui.freeview;
+import dgl.templates.freeview;
 import dgl.ui.ftfont;
 import dgl.ui.textline;
-import dgl.ui.i18n;
+//import dgl.ui.i18n;
 
 import lamp;
 import physobject;
@@ -30,7 +33,7 @@ class PhysicsTestApp: Application
     TextLine fpsText;
 
     FreeviewLayer layer3d;
-    //PhysicsLayer layerPhysics;
+    PhysicsLayer layerPhysics;
     Layer layer2d;
 
     this()
@@ -46,7 +49,7 @@ class PhysicsTestApp: Application
         Lamp lamp = new Lamp(Vector4f(10.0f, 20.0f, 5.0f, 1.0f));
         layer3d.addDrawable(lamp);
 
-        PhysicsLayer layerPhysics = new PhysicsLayer(videoWidth, videoHeight, 0);
+        layerPhysics = new PhysicsLayer(videoWidth, videoHeight, 0);
         layerPhysics.addModifier(layer3d.camera);
         addLayer(layerPhysics);
 
@@ -54,7 +57,7 @@ class PhysicsTestApp: Application
 
         font = new FreeTypeFont("data/fonts/droid/DroidSans.ttf", 27);
 
-        fpsText = new TextLine(font, localizef("FPS: %s", fps), Vector2f(10, 10));
+        fpsText = new TextLine(font, format("FPS: %s", fps), Vector2f(10, 10));
         fpsText.alignment = Alignment.Left;
         fpsText.color = Color4f(1, 1, 1);
         layer2d.addDrawable(fpsText);
@@ -78,13 +81,32 @@ class PhysicsTestApp: Application
     override void onUpdate()
     {
         super.onUpdate();
-        fpsText.setText(localizef("FPS: %s", fps));
+        fpsText.setText(format("FPS: %s", fps));
     }
+}
+
+void loadLibraries()
+{
+    version(Windows)
+    {
+        enum sharedLibSDL = "SDL.dll";
+        enum sharedLibFT = "freetype.dll";
+    }
+    version(linux)
+    {
+        enum sharedLibSDL = "./libsdl.so";
+        enum sharedLibFT = "./libfreetype.so";
+    }
+
+    DerelictGL.load();
+    DerelictGLU.load();
+    DerelictSDL.load(sharedLibSDL);
+    DerelictFT.load(sharedLibFT);
 }
 
 void main()
 {
-    Locale.readLang("locale");
+    loadLibraries();
     auto app = new PhysicsTestApp();
     app.run();
 }
