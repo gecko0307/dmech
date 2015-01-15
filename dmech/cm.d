@@ -40,7 +40,7 @@ import dlib.geometry.triangle;
 import dmech.contact;
 import dmech.rigidbody;
 import dmech.geometry;
-import dmech.shapecomp;
+import dmech.shape;
 import dmech.mpr;
 import dmech.clipping;
 

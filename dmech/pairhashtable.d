@@ -35,7 +35,7 @@ import dmech.hashtable;
  * Pair order matters: (a,b) != (b,a)
  */
 
-class PairHashTable(T): HashTable!(T, ulong)
+class PairHashTable(T): HashTable!(T, uint)
 {
     this(size_t size)
     {
@@ -58,7 +58,7 @@ class PairHashTable(T): HashTable!(T, ulong)
     }
 }
 
-ulong szudzikPair(uint a, uint b)
+uint szudzikPair(uint a, uint b)
 {
     return a >= b ? a * a + a + b : a + b * b;
 }
