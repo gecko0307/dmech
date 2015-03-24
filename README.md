@@ -37,6 +37,8 @@ Usage examples
 --------------
 See [demos](/demos) directory. All examples use [DGL](http://github.com/gecko0307/dgl) for rendering.
 
+For real-world usage demo, check out [Atrium](http://gamejolt.com/games/action/atrium/46185), a physics-based action game (in-development).
+
 License
 -------
 Copyright (c) 2013-2014 Timur Gafarov.
