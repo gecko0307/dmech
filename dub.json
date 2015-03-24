@@ -13,9 +13,9 @@
 
     "dependencies": {
         "dlib": ">=0.5.2"
-    }
+    },
 
     "buildRequirements": [
         "allowWarnings"
-    ],
+    ]
 }
