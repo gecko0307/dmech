@@ -37,6 +37,9 @@ Usage examples
 --------------
 See [demos](/demos) directory. All examples use [DGL](http://github.com/gecko0307/dgl) for rendering.
 
+Precompiled demos (for Windows):
+* [Third person game](https://www.dropbox.com/s/oks658nrzc9hz8n/third-person-game-robot-win32.zip?dl=0)
+
 For real-world usage demo, check out [Atrium](http://gamejolt.com/games/action/atrium/46185), a physics-based action game (in-development).
 
 License
