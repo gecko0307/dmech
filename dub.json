@@ -1,0 +1,21 @@
+{
+    "name": "dmech",
+    "description": "3D physics engine",
+    "homepage": "http://github.com/gecko0307/dmech",
+    "license": "Boost",
+    "authors": [
+        "Timur Gafarov"
+    ],
+
+    "importPaths": [
+        "."
+    ],
+
+    "dependencies": {
+        "dlib": ">=0.5.2"
+    }
+
+    "buildRequirements": [
+        "allowWarnings"
+    ],
+}
