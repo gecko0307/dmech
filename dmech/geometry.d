@@ -1,5 +1,5 @@
 /*
-Copyright (c) 2013-2014 Timur Gafarov 
+Copyright (c) 2013-2015 Timur Gafarov 
 
 Boost Software License - Version 1.0 - August 17th, 2003
 
@@ -30,6 +30,7 @@ module dmech.geometry;
 
 import std.math;
 
+import dlib.core.memory;
 import dlib.math.vector;
 import dlib.math.matrix;
 import dlib.math.affine;
@@ -47,7 +48,7 @@ enum GeomType
     Triangle
 }
 
-abstract class Geometry
+abstract class Geometry: ManuallyAllocatable
 {
     GeomType type = GeomType.Undefined;
 
@@ -69,6 +70,9 @@ abstract class Geometry
     {
         return AABB(position, Vector3f(1.0f, 1.0f, 1.0f));
     }
+    
+    mixin FreeImpl;
+    mixin ManualModeImpl;
 }
 
 class GeomSphere: Geometry
@@ -102,6 +106,8 @@ class GeomSphere: Geometry
     {
         return AABB(position, Vector3f(radius, radius, radius));
     }
+    
+    mixin FreeImpl;
 }
 
 class GeomBox: Geometry
@@ -144,6 +150,8 @@ class GeomBox: Geometry
         return AABB(position, 
             Vector3f(bsphereRadius, bsphereRadius, bsphereRadius));
     }
+    
+    mixin FreeImpl;
 }
 
 class GeomCylinder: Geometry
@@ -198,6 +206,8 @@ class GeomCylinder: Geometry
         float d = sqrt(rsum * rsum + height * height) * 0.5f;
         return AABB(position, Vector3f(d, d, d));
     }
+    
+    mixin FreeImpl;
 }
 
 class GeomCone: Geometry
@@ -253,6 +263,8 @@ class GeomCone: Geometry
         float d = sqrt(rsum * rsum + height * height) * 0.5f;
         return AABB(position, Vector3f(d, d, d));
     }
+    
+    mixin FreeImpl;
 }
 
 class GeomEllipsoid: Geometry
@@ -288,6 +300,8 @@ class GeomEllipsoid: Geometry
     {
         return AABB(position, radii);
     }
+    
+    mixin FreeImpl;
 }
 
 class GeomTriangle: Geometry
@@ -326,5 +340,7 @@ class GeomTriangle: Geometry
     }
 
     // TODO: boundingBox
+    
+    mixin FreeImpl;
 }
 

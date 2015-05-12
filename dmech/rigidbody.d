@@ -1,5 +1,5 @@
 /*
-Copyright (c) 2013-2014 Timur Gafarov 
+Copyright (c) 2013-2015 Timur Gafarov 
 
 Boost Software License - Version 1.0 - August 17th, 2003
 
@@ -30,6 +30,8 @@ module dmech.rigidbody;
 
 import std.math;
 
+import dlib.core.memory;
+import dlib.container.array;
 import dlib.math.vector;
 import dlib.math.matrix;
 import dlib.math.quaternion;
@@ -39,7 +41,12 @@ import dlib.math.utils;
 import dmech.shape;
 import dmech.contact;
 
-class RigidBody
+interface CollisionDispatcher
+{
+    void onNewContact(RigidBody rb, Contact c);
+}
+
+class RigidBody: ManuallyAllocatable
 {
     Vector3f position;
     Quaternionf orientation;
@@ -70,7 +77,7 @@ class RigidBody
     bool useGravity = true;
     bool enableRotation = true;
 
-    ShapeComponent[] shapes;
+    DynamicArray!ShapeComponent shapes;
 
     bool dynamic;
 
@@ -81,14 +88,13 @@ class RigidBody
     bool useOwnGravity = false;
     Vector3f gravity = Vector3f(0, 0, 0);
 
-    alias void delegate(RigidBody, Contact) contactFunc;
-    contactFunc[] onNewContact;
+    DynamicArray!CollisionDispatcher collisionDispatchers;
 
     void contactEvent(Contact c)
     {
-        foreach(f; onNewContact)
+        foreach(d; collisionDispatchers.data)
         {
-            f(this, c);
+            d.onNewContact(this, c);
         }
     }
 
@@ -144,7 +150,7 @@ class RigidBody
     void addShapeComponent(ShapeComponent shape)
     {
         shape.transformation = transformation() * translationMatrix(shape.centroid);
-        shapes ~= shape;
+        shapes.append(shape);
 
         if (!dynamic)
             return;
@@ -152,7 +158,7 @@ class RigidBody
         centerOfMass = Vector3f(0, 0, 0);
         float m = 0.0f;
 
-        foreach (sh; shapes)
+        foreach (sh; shapes.data)
         {
             m += sh.mass;
             centerOfMass += sh.mass * sh.centroid;
@@ -166,7 +172,7 @@ class RigidBody
 
         // Compute inertia tensor using Huygens-Steiner theorem
         inertiaTensor = Matrix3x3f.zero;
-        foreach (sh; shapes)
+        foreach (sh; shapes.data)
         {
             Vector3f r = centerOfMass - sh.centroid;
             inertiaTensor += 
@@ -255,7 +261,7 @@ class RigidBody
 
     void updateShapeComponents()
     {
-        foreach (sh; shapes)
+        foreach (sh; shapes.data)
         {
             sh.transformation = transformation() * translationMatrix(sh.centroid);
         }
@@ -322,5 +328,14 @@ class RigidBody
         Vector3f w = angularVelocity;
         return 0.5f * dot(w * inertiaTensor, w);
     }
+    
+    void free()
+    {
+        shapes.free();
+        collisionDispatchers.free();
+        Delete(this);
+    }
+    
+    mixin ManualModeImpl;
 }
 

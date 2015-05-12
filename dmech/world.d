@@ -1,5 +1,5 @@
 /*
-Copyright (c) 2013-2014 Timur Gafarov 
+Copyright (c) 2013-2015 Timur Gafarov 
 
 Boost Software License - Version 1.0 - August 17th, 2003
 
@@ -31,6 +31,8 @@ module dmech.world;
 import std.math;
 import std.range;
 
+import dlib.core.memory;
+import dlib.container.array;
 import dlib.math.vector;
 import dlib.math.matrix;
 import dlib.math.affine;
@@ -56,17 +58,20 @@ import dmech.raycast;
  * simulation cycles on them.
  */
 
-class PhysicsWorld
+alias PairHashTable!PersistentContactManifold ContactCache;
+
+class PhysicsWorld: ManuallyAllocatable
 {
-    RigidBody[] staticBodies;
-    RigidBody[] dynamicBodies;
-    Constraint[] constraints;
+    DynamicArray!ShapeComponent shapeComponents;
+    DynamicArray!RigidBody staticBodies;
+    DynamicArray!RigidBody dynamicBodies;
+    DynamicArray!Constraint constraints;
 
     Vector3f gravity;
     
     protected uint maxShapeId = 1;
 
-    PairHashTable!PersistentContactManifold manifolds;
+    ContactCache manifolds;
 
     bool broadphase = false;
     bool warmstart = false;
@@ -85,21 +90,21 @@ class PhysicsWorld
     {
         gravity = Vector3f(0.0f, -9.80665f, 0.0f); // Earth -9.80665f
 
-        manifolds = new PairHashTable!PersistentContactManifold(maxCollisions);
+        manifolds = New!ContactCache(maxCollisions);
         
-        // Create proxy triangle 
-        proxyTri = new RigidBody();
+        // Create proxy triangle
+        proxyTri = New!RigidBody();
         proxyTri.position = Vector3f(0, 0, 0);
-        proxyTriGeom = new GeomTriangle(
+        proxyTriGeom = New!GeomTriangle(
             Vector3f(-1.0f, 0.0f, -1.0f), 
             Vector3f(+1.0f, 0.0f,  0.0f),
             Vector3f(-1.0f, 0.0f, +1.0f));
-        proxyTriShape = new ShapeComponent(proxyTriGeom, Vector3f(0, 0, 0), 1);
+        proxyTriShape = New!ShapeComponent(proxyTriGeom, Vector3f(0, 0, 0), 1);
         proxyTriShape.id = maxShapeId;
         maxShapeId++;
         proxyTriShape.transformation = 
             proxyTri.transformation() * translationMatrix(proxyTriShape.centroid);
-        proxyTri.shapes ~= proxyTriShape;
+        proxyTri.shapes.append(proxyTriShape);
         proxyTri.mass = float.infinity;
         proxyTri.invMass = 0.0f;
         proxyTri.inertiaTensor = matrixf(
@@ -117,7 +122,7 @@ class PhysicsWorld
 
     RigidBody addDynamicBody(Vector3f pos, float mass = 0.0f)
     {
-        auto b = new RigidBody();
+        auto b = New!RigidBody();
         b.position = pos;
         b.mass = mass;
         b.invMass = 1.0f / mass;
@@ -132,13 +137,13 @@ class PhysicsWorld
             0, 0, 0
         );
         b.dynamic = true;
-        dynamicBodies ~= b;
+        dynamicBodies.append(b);
         return b;
     }
 
     RigidBody addStaticBody(Vector3f pos)
     {
-        auto b = new RigidBody();
+        auto b = New!RigidBody();
         b.position = pos;
         b.mass = float.infinity;
         b.invMass = 0.0f;
@@ -153,13 +158,14 @@ class PhysicsWorld
             0, 0, 0
         );
         b.dynamic = false;
-        staticBodies ~= b;
+        staticBodies.append(b);
         return b;
     }
 
     ShapeComponent addShapeComponent(RigidBody b, Geometry geom, Vector3f position, float mass)
     {
-        auto shape = new ShapeComponent(geom, position, mass);
+        auto shape = New!ShapeComponent(geom, position, mass);
+        shapeComponents.append(shape);
         shape.id = maxShapeId;
         maxShapeId++;
         b.addShapeComponent(shape);
@@ -168,13 +174,15 @@ class PhysicsWorld
 
     Constraint addConstraint(Constraint c)
     {
-        constraints ~= c;
+        constraints.append(c);
         return c;
     }
 
     void update(double dt)
     {
-        if (dynamicBodies.length == 0)
+        auto dynamicBodiesArray = dynamicBodies.data;
+        
+        if (dynamicBodiesArray.length == 0)
             return;
 
         foreach(ref m; manifolds)
@@ -182,7 +190,7 @@ class PhysicsWorld
             m.update();
         }
 
-        foreach(b; dynamicBodies)
+        foreach(b; dynamicBodiesArray)
         {
             b.updateInertia();
             if (b.useGravity)
@@ -205,7 +213,7 @@ class PhysicsWorld
 
         solveConstraints(dt);
 
-        foreach(b; dynamicBodies)
+        foreach(b; dynamicBodiesArray)
         {
             b.integrateVelocities(dt);
         }
@@ -218,7 +226,7 @@ class PhysicsWorld
             solvePositionError(c, m.numContacts);
         }
 
-        foreach(b; dynamicBodies)
+        foreach(b; dynamicBodiesArray)
         {
             b.integratePseudoVelocities(dt);
             b.updateShapeComponents();
@@ -239,9 +247,9 @@ class PhysicsWorld
         CastResult cr;
 
         if (checkAgainstBodies)
-        foreach(b; chain(staticBodies, dynamicBodies))
+        foreach(b; chain(staticBodies.data, dynamicBodies.data))
         if (b.raycastable)
-        foreach(shape; b.shapes)
+        foreach(shape; b.shapes.data)
         {
             bool hit = convexRayCast(shape, rayStart, rayDir, maxRayDist, cr);
             if (hit)
@@ -262,7 +270,8 @@ class PhysicsWorld
         Ray ray = Ray(rayStart, rayStart + rayDir * maxRayDist);
 
         if (bvhRoot !is null)
-        bvhRoot.traverseByRay(ray, (ref Triangle tri)
+        //bvhRoot.traverseByRay(ray, (ref Triangle tri)
+        foreach(tri; bvhRoot.traverseByRay(&ray))
         {
             Vector3f ip;
             bool hit = ray.intersectTriangle(tri.v[0], tri.v[1], tri.v[2], ip);
@@ -281,22 +290,23 @@ class PhysicsWorld
                     res = true;
                 }
             }
-        });
+        }
 
         return res;
     }
 
     void findDynamicCollisionsBruteForce()
     {
-        for (int i = 0; i < dynamicBodies.length - 1; i++)   
+        auto dynamicBodiesArray = dynamicBodies.data;
+        for (int i = 0; i < dynamicBodiesArray.length - 1; i++)   
         {
-            auto body1 = dynamicBodies[i];
-            foreach(shape1; body1.shapes)
+            auto body1 = dynamicBodiesArray[i];
+            foreach(shape1; body1.shapes.data)
             {
-                for (int j = i + 1; j < dynamicBodies.length; j++)
+                for (int j = i + 1; j < dynamicBodiesArray.length; j++)
                 {
-                    auto body2 = dynamicBodies[j];
-                    foreach(shape2; body2.shapes)
+                    auto body2 = dynamicBodiesArray[j];
+                    foreach(shape2; body2.shapes.data)
                     {
                         Contact c;
                         c.body1 = body1;
@@ -310,15 +320,16 @@ class PhysicsWorld
 
     void findDynamicCollisionsBroadphase()
     {
-        for (int i = 0; i < dynamicBodies.length - 1; i++)   
+        auto dynamicBodiesArray = dynamicBodies.data;
+        for (int i = 0; i < dynamicBodiesArray.length - 1; i++)   
         {
-            auto body1 = dynamicBodies[i];
-            foreach(shape1; body1.shapes)
+            auto body1 = dynamicBodiesArray[i];
+            foreach(shape1; body1.shapes.data)
             {
-                for (int j = i + 1; j < dynamicBodies.length; j++)
+                for (int j = i + 1; j < dynamicBodiesArray.length; j++)
                 {
-                    auto body2 = dynamicBodies[j];
-                    foreach(shape2; body2.shapes)
+                    auto body2 = dynamicBodiesArray[j];
+                    foreach(shape2; body2.shapes.data)
                     if (shape1.boundingBox.intersectsAABB(shape2.boundingBox))
                     {
                         Contact c;
@@ -333,13 +344,15 @@ class PhysicsWorld
 
     void findStaticCollisionsBruteForce()
     {
-        foreach(body1; dynamicBodies)
+        auto dynamicBodiesArray = dynamicBodies.data;
+        auto staticBodiesArray = staticBodies.data;
+        foreach(body1; dynamicBodiesArray)
         {
-            foreach(shape1; body1.shapes)
+            foreach(shape1; body1.shapes.data)
             {
-                foreach(body2; staticBodies)
+                foreach(body2; staticBodiesArray)
                 {
-                    foreach(shape2; body2.shapes)
+                    foreach(shape2; body2.shapes.data)
                     {
                         Contact c;
                         c.body1 = body1;
@@ -354,12 +367,19 @@ class PhysicsWorld
         // Find collisions between dynamic bodies 
         // and the BVH world (static triangle mesh)
         if (bvhRoot !is null)
-        foreach(rb; dynamicBodies)
-        foreach(shape; rb.shapes)
+        {
+            checkCollisionBVH();
+        }
+    }
+    
+    void checkCollisionBVH()
+    {
+        foreach(rb; dynamicBodies.data)
+        foreach(shape; rb.shapes.data)
         {
             // There may be more than one contact at a time
-            static Contact[5] contacts;
-            static Triangle[5] contactTris;
+            Contact[5] contacts;
+            Triangle[5] contactTris;
             uint numContacts = 0;
 
             Contact c;
@@ -369,7 +389,7 @@ class PhysicsWorld
 
             Sphere sphere = shape.boundingSphere;
 
-            bvhRoot.traverseBySphere(sphere, (ref Triangle tri)
+            foreach(tri; bvhRoot.traverseBySphere(&sphere)) 
             {
                 // Update temporary triangle to check collision
                 proxyTriShape.transformation = translationMatrix(tri.barycenter);
@@ -378,9 +398,9 @@ class PhysicsWorld
                 proxyTriGeom.v[2] = tri.v[2] - tri.barycenter;
 
                 bool collided = checkCollision(shape, proxyTriShape, c);
-                
+
                 if (collided)
-                {                
+                {
                     if (numContacts < contacts.length)
                     {
                         c.shape1RelPoint = c.point - shape.position;
@@ -395,7 +415,7 @@ class PhysicsWorld
                         numContacts++;
                     }
                 }
-            });
+            }
             
            /*
             * NOTE:
@@ -424,6 +444,7 @@ class PhysicsWorld
                 //    rb.onGround = true;
             }
                 
+
             if (deepestContactIdx >= 0)
             {                   
                 auto co = &contacts[deepestContactIdx];    
@@ -491,14 +512,15 @@ class PhysicsWorld
             prepareContact(c);
         }
 
-        foreach(c; constraints)
+        auto constraintsData = constraints.data;
+        foreach(c; constraintsData)
         {
             c.prepare(dt);
         }
 
         foreach(iteration; 0..constraintIterations)
         {
-            foreach(c; constraints)
+            foreach(c; constraintsData)
                 c.step();
 
             foreach(ref m; manifolds)
@@ -509,5 +531,36 @@ class PhysicsWorld
             }
         }
     }
+    
+    void free()
+    {
+        foreach(sh; shapeComponents.data)
+            sh.free();
+        shapeComponents.free();
+           
+        foreach(b; dynamicBodies.data)
+            b.free();
+        dynamicBodies.free();
+           
+        foreach(b; staticBodies.data)
+            b.free();
+        staticBodies.free();
+		
+        foreach(c; constraints.data)
+            c.free();
+        constraints.free();
+          
+        shapeComponents.free();
+
+        proxyTriShape.free();
+        proxyTriGeom.free();
+        proxyTri.free();
+
+        manifolds.free();
+        
+        Delete(this);
+    }
+    
+    mixin ManualModeImpl;
 }
 

@@ -1,5 +1,5 @@
 /*
-Copyright (c) 2014 Timur Gafarov 
+Copyright (c) 2014-2015 Timur Gafarov 
 
 Boost Software License - Version 1.0 - August 17th, 2003
 
@@ -28,6 +28,7 @@ DEALINGS IN THE SOFTWARE.
 
 module dmech.shape;
 
+import dlib.core.memory;
 import dlib.math.vector;
 import dlib.math.matrix;
 import dlib.math.affine;
@@ -41,9 +42,10 @@ import dmech.geometry;
  * It stores non-geometric information such as mass contribution,
  * position in body space and a unique identifier for indexing in
  * contact cache.
+ * One Geometry can be shared between multiple ShapeComponents.
  */
 
-class ShapeComponent
+class ShapeComponent: ManuallyAllocatable
 {
     Geometry geometry; // geometry
     Vector3f centroid; // position in body space
@@ -121,5 +123,13 @@ class ShapeComponent
 
         return result;
     }
+    
+    void free()
+    {
+        geometry = null;
+        Delete(this);
+    }
+    
+    mixin ManualModeImpl;
 }
 

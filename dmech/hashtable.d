@@ -1,5 +1,5 @@
 /*
-Copyright (c) 2013-2014 Timur Gafarov 
+Copyright (c) 2013-2015 Timur Gafarov 
 
 Boost Software License - Version 1.0 - August 17th, 2003
 
@@ -28,7 +28,9 @@ DEALINGS IN THE SOFTWARE.
 
 module dmech.hashtable;
 
-class HashTable(T, K)
+import dlib.core.memory;
+
+class HashTable(T, K): ManuallyAllocatable
 {
     struct Entry(T)
     {
@@ -43,7 +45,7 @@ class HashTable(T, K)
     this(size_t size)
     {
         this.size = size;
-        table = new Entry!(T)[size];
+        table = New!(Entry!(T)[])(size);
     }
 
     T* get(K key)
@@ -94,5 +96,18 @@ class HashTable(T, K)
         }
 
         return result;
+    }
+
+    mixin ManualModeImpl;
+
+    void freeContent()
+    {
+        Delete(table);
+    }
+
+    void free()
+    {
+        freeContent();
+        Delete(this);
     }
 }

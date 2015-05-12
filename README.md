@@ -1,6 +1,6 @@
 dmech
 =====
-dmech stands for "D mechanics": it is a real-time 3D physics engine written in D language, capable of simulating rigid body dynamics. It is more suitable for computer games than scientific simulations: the goal is to convince a player, rather than giving accurate results. Currently dmech is in early stages of development and not considered for production use.
+dmech stands for "D mechanics": it is a real-time 3D physics engine written in D language, capable of simulating rigid body dynamics. It is more suitable for computer games than scientific simulations: the goal is to convince a player, rather than giving accurate results. dmech is GC-free and fully platform-independent, it can be used with any API or graphics engine. Currently dmech is in early stages of development and not considered for production use.
 
 Screenshots
 -----------
@@ -40,7 +40,7 @@ See [demos](/demos) directory. All examples use [DGL](http://github.com/gecko030
 Precompiled demos (for Windows):
 * [Third person game](https://www.dropbox.com/s/oks658nrzc9hz8n/third-person-game-robot-win32.zip?dl=0)
 
-For real-world usage demo, check out [Atrium](http://gamejolt.com/games/action/atrium/46185), a physics-based action game (in-development).
+For real-world usage demo, check out [Atrium](http://github.com/gecko0307/atrium), a physics-based action game (in-development).
 
 License
 -------

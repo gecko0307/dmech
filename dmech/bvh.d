@@ -31,7 +31,9 @@ module dmech.bvh;
 import std.array;
 import std.math;
 
+import dlib.core.memory;
 import dlib.core.compound;
+import dlib.container.array;
 import dlib.math.utils;
 import dlib.math.vector;
 import dlib.geometry.aabb;
@@ -124,34 +126,127 @@ AABB enclosingAABB(T)(T[] objects)
 
 class BVHNode(T)
 {
-    T[] objects;
+    DynamicArray!T objects;
     AABB aabb;
     BVHNode[2] child;
     uint userData;
 
-    this(T[] objs)
+    this(DynamicArray!T objs)
     {
         objects = objs;
-        aabb = enclosingAABB(objects);
+        aabb = enclosingAABB(objects.data);
+    }
+    
+    void free()
+    {
+        objects.free();
+        if (child[0] !is null) child[0].free();
+        if (child[1] !is null) child[1].free();
+        Delete(this);
+    }
+    
+    SphereTraverseAggregate!T traverseBySphere(Sphere* sphere)
+    {
+        return SphereTraverseAggregate!(T)(this, sphere);
+    }
+    
+    RayTraverseAggregate!T traverseByRay(Ray* ray)
+    {
+        return RayTraverseAggregate!(T)(this, ray);
     }
 }
 
-void traverseBySphere(T)(BVHNode!T node, ref Sphere sphere, void delegate(ref T) func)
+struct SphereTraverseAggregate(T)
+{
+    BVHNode!T node;
+    Sphere* sphere;
+    
+    int opApply(int delegate(ref T) dg)
+    {
+        int result = 0;
+        
+        Vector3f cn;
+        float pd;
+        if (node.aabb.intersectsSphere(*sphere, cn, pd))
+        {        
+            if (node.child[0] !is null)
+            {
+                result = node.child[0].traverseBySphere(sphere).opApply(dg);
+                if (result)
+                    return result;
+            }
+            
+            if (node.child[1] !is null)
+            {
+                result = node.child[1].traverseBySphere(sphere).opApply(dg);
+                if (result)
+                    return result;
+            }
+            
+            foreach(ref obj; node.objects.data)
+                dg(obj);
+        }
+        else
+            return result;
+            
+        return result;
+    }
+}
+
+struct RayTraverseAggregate(T)
+{
+    BVHNode!T node;
+    Ray* ray;
+    
+    int opApply(int delegate(ref T) dg) // TODO: nearest intersection point
+    {
+        int result = 0;
+        
+        float it = 0.0f;
+        if (node.aabb.intersectsSegment(ray.p0, ray.p1, it))    
+        { 
+            if (node.child[0] !is null)
+            {
+                result = node.child[0].traverseByRay(ray).opApply(dg);
+                if (result)
+                    return result;
+            }
+            
+            if (node.child[1] !is null)
+            {
+                result = node.child[1].traverseByRay(ray).opApply(dg);
+                if (result)
+                    return result;
+            }
+            
+            foreach(ref obj; node.objects.data)
+                dg(obj);
+        }
+        else
+            return result;
+            
+        return result;
+    }
+}
+
+/+
+void traverseBySphere(T)(BVHNode!T node, ref Sphere sphere /*, void delegate(ref T) func*/)
 {
     Vector3f cn;
     float pd;
     if (node.aabb.intersectsSphere(sphere, cn, pd))
     {
-        if (node.child[0] !is null)
-            node.child[0].traverseBySphere(sphere, func);
-        if (node.child[1] !is null)
-            node.child[1].traverseBySphere(sphere, func);
+        //if (node.child[0] !is null)
+        //    node.child[0].traverseBySphere(sphere, func);
+        //if (node.child[1] !is null)
+        //    node.child[1].traverseBySphere(sphere, func);
 
-        foreach(ref obj; node.objects)
-            func(obj);
+        //foreach(ref obj; node.objects.data)
+        //    func(obj);
     }
 }
-
++/
+/*
 void traverse(T)(BVHNode!T node, void delegate(BVHNode!T) func)
 {
     if (node.child[0] !is null)
@@ -161,7 +256,8 @@ void traverse(T)(BVHNode!T node, void delegate(BVHNode!T) func)
 
     func(node);
 }
-
+*/
+/*
 void traverseByRay(T)(BVHNode!T node, Ray ray, void delegate(ref T) func)
 {
     float it = 0.0f;
@@ -172,10 +268,11 @@ void traverseByRay(T)(BVHNode!T node, Ray ray, void delegate(ref T) func)
         if (node.child[1] !is null)
             node.child[1].traverseByRay(ray, func);
 
-        foreach(ref obj; node.objects)
+        foreach(ref obj; node.objects.data)
             func(obj);
     }
 }
+*/
 
 // TODO:
 // - support multithreading (2 children = 2 threads)
@@ -187,73 +284,92 @@ enum Heuristic
     //ESC  // Early Split Clipping
 }
 
+DynamicArray!T duplicate(T)(DynamicArray!T arr)
+{
+    DynamicArray!T res;
+    foreach(v; arr.data)
+        res.append(v);
+    return res;
+}
+
 class BVHTree(T)
 {
     BVHNode!T root;
 
-    this(T[] objects, 
+    this(DynamicArray!T objects, 
          uint maxObjectsPerNode = 8,
          Heuristic splitHeuristic = Heuristic.SAH)
     {
         root = construct(objects, maxObjectsPerNode, splitHeuristic);
     }
+    
+    void free()
+    {
+        root.free();
+        Delete(this);
+    }
 
     BVHNode!T construct(
-         T[] objects, 
+         DynamicArray!T objects, 
          uint maxObjectsPerNode,
          Heuristic splitHeuristic)
     {
-        AABB box = enclosingAABB(objects);
+        BVHNode!T node = New!(BVHNode!T)(duplicate(objects));
+
+        if (node.objects.data.length <= maxObjectsPerNode)
+        {
+            return node;
+        }
+        
+        AABB box = enclosingAABB(node.objects.data);
         
         SplitPlane sp;
         if (splitHeuristic == Heuristic.HMA)
-            sp = getHalfMainAxisSplitPlane(objects, box);
+            sp = getHalfMainAxisSplitPlane(node.objects.data, box);
         else if (splitHeuristic == Heuristic.SAH)
-            sp = getSAHSplitPlane(objects, box);
+            sp = getSAHSplitPlane(node.objects.data, box);
         else
             assert(0, "BVH: unsupported split heuristic");
             
         auto boxes = boxSplitWithPlane(box, sp);
 
-        T[] leftObjects;
-        T[] rightObjects;
+        DynamicArray!T leftObjects;
+        DynamicArray!T rightObjects;
     
-        foreach(obj; objects)
+        foreach(obj; node.objects.data)
         {
             if (boxes[0].intersectsAABB(obj.boundingBox))
-                leftObjects ~= obj;
+                leftObjects.append(obj);
             else if (boxes[1].intersectsAABB(obj.boundingBox))
-                rightObjects ~= obj;
+                rightObjects.append(obj);
         }
-    
-        BVHNode!T node = new BVHNode!T(objects);
-
-        if (objects.length <= maxObjectsPerNode)
-            return node;
         
-        if (leftObjects.length > 0 || rightObjects.length > 0)
-            node.objects = [];
+        if (leftObjects.data.length > 0 || rightObjects.data.length > 0)
+            node.objects.free();
 
-        if (leftObjects.length > 0)
+        if (leftObjects.data.length > 0)
             node.child[0] = construct(leftObjects, maxObjectsPerNode, splitHeuristic);
         else
             node.child[0] = null;
     
-        if (rightObjects.length > 0)
+        if (rightObjects.data.length > 0)
             node.child[1] = construct(rightObjects, maxObjectsPerNode, splitHeuristic);
         else
             node.child[1] = null;
+            
+        leftObjects.free();
+        rightObjects.free();
 
         return node;    
     }
 
-    SplitPlane getHalfMainAxisSplitPlane(ref T[] objects, ref AABB box)
+    SplitPlane getHalfMainAxisSplitPlane(T[] objects, ref AABB box)
     {
         Axis axis = boxGetMainAxis(box);
         return boxGetSplitPlaneForAxis(box, axis);
     }
 
-    SplitPlane getSAHSplitPlane(ref T[] objects, ref AABB box)
+    SplitPlane getSAHSplitPlane(T[] objects, ref AABB box)
     {
         Axis axis = boxGetMainAxis(box);
         

@@ -1,5 +1,5 @@
 /*
-Copyright (c) 2014 Timur Gafarov 
+Copyright (c) 2014-2015 Timur Gafarov 
 
 Boost Software License - Version 1.0 - August 17th, 2003
 
@@ -28,6 +28,7 @@ DEALINGS IN THE SOFTWARE.
 
 module dmech.pairhashtable;
 
+import dlib.core.memory;
 import dmech.hashtable;
 
 /*
@@ -55,6 +56,12 @@ class PairHashTable(T): HashTable!(T, uint)
     void remove(uint k1, uint k2)
     {
         super.remove(szudzikPair(k1, k2));
+    }
+
+    override void free()
+    {
+        super.freeContent();
+        Delete(this);
     }
 }
 

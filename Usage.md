@@ -43,3 +43,11 @@ Then, align your graphical objects to corresponding body matrices:
     0 1 0 y
     0 0 1 z
     0 0 0 1
+    
+When you are done with your simulation, don't forget to free the memory allocated by the PhysicsWorld:
+
+    world.free();
+    
+Because dmech doesn't use D's garbage collector to allocate its memory, it needs to be freed manually.
+Don't try to update the simulation of access bodies/shapes after the world was freed.
+
