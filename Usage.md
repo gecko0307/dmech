@@ -3,24 +3,24 @@ To use dmech in your application, import the following modules:
     import dmech.geometry;
     import dmech.rigidbody;
     import dmech.world;
-
+    import dlib.core.memory;
     import dlib.math.vector;
     import dlib.math.matrix;
 
 Create a world:
 
-    PhysicsWorld world = new PhysicsWorld();
+    PhysicsWorld world = New!PhysicsWorld();
 
 Add some bodies and apply geometries to them:
 
     // bGround - static box 40x40x1 m that acts as a ground plane
     RigidBody bGround = world.addStaticBody(Vector3f(0.0f, -1.0f, 0.0f));
-    Geometry gGround = new GeomBox(Vector3f(40.0f, 1.0f, 40.0f));
+    Geometry gGround = New!GeomBox(Vector3f(40.0f, 1.0f, 40.0f));
     world.addShapeComponent(bGround, gGround, Vector3f(0.0f, 0.0f, 0.0f), 1.0f);
 
     // bSphere - dynamic sphere with radius of 1 m and mass of 1 kg 
     RigidBody bSphere = world.addDynamicBody(Vector3f(0.0f, 2.0f, 0.0f), 0.0f);
-    Geometry gSphere = new GeomSphere(1.0f);
+    Geometry gSphere = New!GeomSphere(1.0f);
     world.addShapeComponent(bSphere, gSphere, Vector3f(0.0f, 0.0f, 0.0f), 1.0f);
 
 Now, whenever you want to update the world:
@@ -49,5 +49,11 @@ When you are done with your simulation, don't forget to free the memory allocate
     world.free();
     
 Because dmech doesn't use D's garbage collector to allocate its memory, it needs to be freed manually.
-Don't try to update the simulation of access bodies/shapes after the world was freed.
+Don't try to update the simulation of access bodies after the world was freed.
+
+Also you should free your geometries once you don't need them anymore (they are not freed automatically
+with the bodies, because they can be shared between several worlds).
+
+    gGround.free();
+    gSphere.free();
 
