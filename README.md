@@ -8,6 +8,7 @@ Screenshots
 [![Screenshot2](/images/screenshot2_thumb.jpg)](/images/screenshot2.jpg)
 [![Screenshot3](/images/screenshot3_thumb.jpg)](/images/screenshot3.jpg)
 [![Screenshot4](/images/screenshot4_thumb.jpg)](/images/screenshot4.jpg)
+[![Screenshot4](/images/screenshot5_thumb.jpg)](/images/screenshot5.jpg)
 
 Features
 --------
