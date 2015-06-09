@@ -99,6 +99,7 @@ class RigidBody: ManuallyAllocatable
     }
 
     bool raycastable = true;
+    uint numContacts = 0;
 
     this()
     {
@@ -206,13 +207,13 @@ class RigidBody: ManuallyAllocatable
         linearVelocity *= d;
         angularVelocity *= d;
         
-        if (linearVelocity.length > stopThreshold)
+        if (linearVelocity.length > stopThreshold || numContacts < 3)
         {
             position += linearVelocity * dt;
         }
 
         if (enableRotation)
-        if (angularVelocity.length > stopThreshold)
+        if (angularVelocity.length > stopThreshold || numContacts < 3)
         {
             orientation += 0.5f * Quaternionf(angularVelocity, 0.0f) * orientation * dt;
             orientation.normalize();

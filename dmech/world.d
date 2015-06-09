@@ -464,9 +464,23 @@ class PhysicsWorld: ManuallyAllocatable
                 {
                     m.addContact(*co);
                 }
+
+                c.body1.numContacts++;
+                c.body2.numContacts++;
             }
             else
-                manifolds.remove(shape.id, proxyTriShape.id);
+            {
+                //manifolds.remove(shape.id, proxyTriShape.id);
+
+                auto m = manifolds.get(shape.id, proxyTriShape.id);
+                if (m !is null)
+                {
+                    manifolds.remove(shape.id, proxyTriShape.id);
+
+                    c.body1.numContacts -= m.numContacts;
+                    c.body2.numContacts -= m.numContacts;
+                }
+            }
         }
     }
 
@@ -496,10 +510,20 @@ class PhysicsWorld: ManuallyAllocatable
             {
                 m.addContact(c);
             }
+
+            c.body1.numContacts++;
+            c.body2.numContacts++;
         }
         else
         {
-            manifolds.remove(shape1.id, shape2.id);
+            auto m = manifolds.get(shape1.id, shape2.id);
+            if (m !is null)
+            {
+                manifolds.remove(shape1.id, shape2.id);
+
+                c.body1.numContacts -= m.numContacts;
+                c.body2.numContacts -= m.numContacts;
+            }
         }
     }
 
