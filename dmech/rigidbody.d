@@ -1,5 +1,5 @@
 /*
-Copyright (c) 2013-2015 Timur Gafarov 
+Copyright (c) 2013-2015 Timur Gafarov
 
 Boost Software License - Version 1.0 - August 17th, 2003
 
@@ -46,7 +46,7 @@ interface CollisionDispatcher
     void onNewContact(RigidBody rb, Contact c);
 }
 
-class RigidBody: ManuallyAllocatable
+class RigidBody: Freeable
 {
     Vector3f position;
     Quaternionf orientation;
@@ -56,7 +56,7 @@ class RigidBody: ManuallyAllocatable
 
     Vector3f pseudoLinearVelocity;
     Vector3f pseudoAngularVelocity;
-    
+
     Vector3f linearAcceleration;
     Vector3f angularAcceleration;
 
@@ -111,7 +111,7 @@ class RigidBody: ManuallyAllocatable
 
         pseudoLinearVelocity = Vector3f(0.0f, 0.0f, 0.0f);
         pseudoAngularVelocity = Vector3f(0.0f, 0.0f, 0.0f);
-    
+
         linearAcceleration = Vector3f(0.0f, 0.0f, 0.0f);
         angularAcceleration = Vector3f(0.0f, 0.0f, 0.0f);
 
@@ -176,8 +176,8 @@ class RigidBody: ManuallyAllocatable
         foreach (sh; shapes.data)
         {
             Vector3f r = centerOfMass - sh.centroid;
-            inertiaTensor += 
-                sh.inertiaTensor(sh.mass) + 
+            inertiaTensor +=
+                sh.geometry.inertiaTensor(sh.mass) +
                 (Matrix3x3f.identity * dot(r, r) - tensorProduct(r, r)) * sh.mass;
         }
 
@@ -206,7 +206,7 @@ class RigidBody: ManuallyAllocatable
         float d = clamp(1.0f - dt * damping, 0.0f, 1.0f);
         linearVelocity *= d;
         angularVelocity *= d;
-        
+
         if (linearVelocity.length > stopThreshold || numContacts < 3)
         {
             position += linearVelocity * dt;
@@ -309,7 +309,7 @@ class RigidBody: ManuallyAllocatable
         Vector3f angularImpulse = cross(point - worldCenterOfMass, impulse);
         pseudoAngularVelocity += angularImpulse * invInertiaTensor;
     }
-    
+
     @property float linearKineticEnergy()
     {
         if (!dynamic)
@@ -319,7 +319,7 @@ class RigidBody: ManuallyAllocatable
         float v = linearVelocity.length;
         return 0.5f * mass * v * v;
     }
-    
+
     @property float angularKineticEnergy()
     {
         if (!dynamic)
@@ -329,14 +329,15 @@ class RigidBody: ManuallyAllocatable
         Vector3f w = angularVelocity;
         return 0.5f * dot(w * inertiaTensor, w);
     }
-    
-    void free()
+
+    ~this()
     {
         shapes.free();
         collisionDispatchers.free();
+    }
+
+    void free()
+    {
         Delete(this);
     }
-    
-    mixin ManualModeImpl;
 }
-

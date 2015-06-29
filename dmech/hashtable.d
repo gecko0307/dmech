@@ -1,5 +1,5 @@
 /*
-Copyright (c) 2013-2015 Timur Gafarov 
+Copyright (c) 2013-2015 Timur Gafarov
 
 Boost Software License - Version 1.0 - August 17th, 2003
 
@@ -30,7 +30,7 @@ module dmech.hashtable;
 
 import dlib.core.memory;
 
-class HashTable(T, K): ManuallyAllocatable
+class HashTable(T, K): Freeable
 {
     struct Entry(T)
     {
@@ -69,7 +69,7 @@ class HashTable(T, K): ManuallyAllocatable
             hash = (hash + 1) % size;
 
         table[hash] = Entry!(T)(key, value, true);
-    } 
+    }
 
     void remove(K key)
     {
@@ -98,16 +98,13 @@ class HashTable(T, K): ManuallyAllocatable
         return result;
     }
 
-    mixin ManualModeImpl;
-
-    void freeContent()
+    ~this()
     {
         Delete(table);
     }
 
     void free()
     {
-        freeContent();
         Delete(this);
     }
 }

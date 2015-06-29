@@ -1,5 +1,5 @@
 /*
-Copyright (c) 2013-2015 Timur Gafarov 
+Copyright (c) 2013-2015 Timur Gafarov
 
 Boost Software License - Version 1.0 - August 17th, 2003
 
@@ -60,7 +60,7 @@ import dmech.raycast;
 
 alias PairHashTable!PersistentContactManifold ContactCache;
 
-class PhysicsWorld: ManuallyAllocatable
+class PhysicsWorld: Freeable
 {
     DynamicArray!ShapeComponent shapeComponents;
     DynamicArray!RigidBody staticBodies;
@@ -68,7 +68,7 @@ class PhysicsWorld: ManuallyAllocatable
     DynamicArray!Constraint constraints;
 
     Vector3f gravity;
-    
+
     protected uint maxShapeId = 1;
 
     ContactCache manifolds;
@@ -78,7 +78,7 @@ class PhysicsWorld: ManuallyAllocatable
 
     uint positionCorrectionIterations = 10;
     uint constraintIterations = 20;
-    
+
     BVHNode!Triangle bvhRoot = null;
 
     // Proxy triangle to deal with BVH data
@@ -91,18 +91,18 @@ class PhysicsWorld: ManuallyAllocatable
         gravity = Vector3f(0.0f, -9.80665f, 0.0f); // Earth -9.80665f
 
         manifolds = New!ContactCache(maxCollisions);
-        
+
         // Create proxy triangle
         proxyTri = New!RigidBody();
         proxyTri.position = Vector3f(0, 0, 0);
         proxyTriGeom = New!GeomTriangle(
-            Vector3f(-1.0f, 0.0f, -1.0f), 
+            Vector3f(-1.0f, 0.0f, -1.0f),
             Vector3f(+1.0f, 0.0f,  0.0f),
             Vector3f(-1.0f, 0.0f, +1.0f));
         proxyTriShape = New!ShapeComponent(proxyTriGeom, Vector3f(0, 0, 0), 1);
         proxyTriShape.id = maxShapeId;
         maxShapeId++;
-        proxyTriShape.transformation = 
+        proxyTriShape.transformation =
             proxyTri.transformation() * translationMatrix(proxyTriShape.centroid);
         proxyTri.shapes.append(proxyTriShape);
         proxyTri.mass = float.infinity;
@@ -181,7 +181,7 @@ class PhysicsWorld: ManuallyAllocatable
     void update(double dt)
     {
         auto dynamicBodiesArray = dynamicBodies.data;
-        
+
         if (dynamicBodiesArray.length == 0)
             return;
 
@@ -234,8 +234,8 @@ class PhysicsWorld: ManuallyAllocatable
     }
 
     bool raycast(
-        Vector3f rayStart, 
-        Vector3f rayDir, 
+        Vector3f rayStart,
+        Vector3f rayDir,
         float maxRayDist,
         out CastResult castResult,
         bool checkAgainstBodies = true,
@@ -298,7 +298,7 @@ class PhysicsWorld: ManuallyAllocatable
     void findDynamicCollisionsBruteForce()
     {
         auto dynamicBodiesArray = dynamicBodies.data;
-        for (int i = 0; i < dynamicBodiesArray.length - 1; i++)   
+        for (int i = 0; i < dynamicBodiesArray.length - 1; i++)
         {
             auto body1 = dynamicBodiesArray[i];
             foreach(shape1; body1.shapes.data)
@@ -321,7 +321,7 @@ class PhysicsWorld: ManuallyAllocatable
     void findDynamicCollisionsBroadphase()
     {
         auto dynamicBodiesArray = dynamicBodies.data;
-        for (int i = 0; i < dynamicBodiesArray.length - 1; i++)   
+        for (int i = 0; i < dynamicBodiesArray.length - 1; i++)
         {
             auto body1 = dynamicBodiesArray[i];
             foreach(shape1; body1.shapes.data)
@@ -363,15 +363,15 @@ class PhysicsWorld: ManuallyAllocatable
                 }
             }
         }
-        
-        // Find collisions between dynamic bodies 
+
+        // Find collisions between dynamic bodies
         // and the BVH world (static triangle mesh)
         if (bvhRoot !is null)
         {
             checkCollisionBVH();
         }
     }
-    
+
     void checkCollisionBVH()
     {
         foreach(rb; dynamicBodies.data)
@@ -389,7 +389,7 @@ class PhysicsWorld: ManuallyAllocatable
 
             Sphere sphere = shape.boundingSphere;
 
-            foreach(tri; bvhRoot.traverseBySphere(&sphere)) 
+            foreach(tri; bvhRoot.traverseBySphere(&sphere))
             {
                 // Update temporary triangle to check collision
                 proxyTriShape.transformation = translationMatrix(tri.barycenter);
@@ -416,14 +416,14 @@ class PhysicsWorld: ManuallyAllocatable
                     }
                 }
             }
-            
+
            /*
             * NOTE:
-            * There is a problem when rolling bodies over a triangle mesh. Instead of rolling 
-            * straight it will get influenced when hitting triangle edges. 
-            * Current solution is to solve only the contact with deepest penetration and 
-            * throw out all others. Other possible approach is to merge all contacts that 
-            * are within epsilon of each other. When merging the contacts, average and 
+            * There is a problem when rolling bodies over a triangle mesh. Instead of rolling
+            * straight it will get influenced when hitting triangle edges.
+            * Current solution is to solve only the contact with deepest penetration and
+            * throw out all others. Other possible approach is to merge all contacts that
+            * are within epsilon of each other. When merging the contacts, average and
             * re-normalize the normals, and average the penetration depth value.
             */
 
@@ -437,19 +437,19 @@ class PhysicsWorld: ManuallyAllocatable
                     deepestContactIdx = i;
                     maxPen = contacts[i].penetration;
                 }
-                
+
                 //Vector3f dirToContact = (contacts[i].point - rb.position).normalized;
                 //float groundness = dot(gravity.normalized, dirToContact);
                 //if (groundness > 0.7f)
                 //    rb.onGround = true;
             }
-                
+
 
             if (deepestContactIdx >= 0)
-            {                   
-                auto co = &contacts[deepestContactIdx];    
+            {
+                auto co = &contacts[deepestContactIdx];
                 co.calcFDir();
-                    
+
                 auto m = manifolds.get(shape.id, proxyTriShape.id);
                 if (m is null)
                 {
@@ -555,36 +555,34 @@ class PhysicsWorld: ManuallyAllocatable
             }
         }
     }
-    
-    void free()
+
+    ~this()
     {
         foreach(sh; shapeComponents.data)
             sh.free();
         shapeComponents.free();
-           
+
         foreach(b; dynamicBodies.data)
             b.free();
         dynamicBodies.free();
-           
+
         foreach(b; staticBodies.data)
             b.free();
         staticBodies.free();
-		
+
         foreach(c; constraints.data)
             c.free();
         constraints.free();
-          
-        shapeComponents.free();
-
-        proxyTriShape.free();
-        proxyTriGeom.free();
-        proxyTri.free();
 
         manifolds.free();
-        
+
+        proxyTriGeom.free();
+        proxyTriShape.free();
+        proxyTri.free();
+    }
+
+    void free()
+    {
         Delete(this);
     }
-    
-    mixin ManualModeImpl;
 }
-

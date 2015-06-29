@@ -1,5 +1,5 @@
 /*
-Copyright (c) 2013-2014 Timur Gafarov 
+Copyright (c) 2013-2014 Timur Gafarov
 
 Boost Software License - Version 1.0 - August 17th, 2003
 
@@ -39,15 +39,13 @@ import dlib.math.quaternion;
 
 import dmech.rigidbody;
 
-abstract class Constraint: ManuallyAllocatable
+abstract class Constraint: Freeable
 {
     RigidBody body1;
     RigidBody body2;
 
     void prepare(double delta);
     void step();
-	
-	mixin ManualModeImpl;
 }
 
 /*
@@ -119,7 +117,7 @@ class DistanceConstraint: Constraint
             jacobian[2] = n;
             jacobian[3] = cross(r2, n);
 
-            effectiveMass = 
+            effectiveMass =
                 body1.invMass + body2.invMass
               + dot(jacobian[1] * body1.invInertiaTensor, jacobian[1])
               + dot(jacobian[3] * body2.invInertiaTensor, jacobian[3]);
@@ -151,7 +149,7 @@ class DistanceConstraint: Constraint
         if (skipConstraint)
             return;
 
-        float jv = 
+        float jv =
             dot(body1.linearVelocity,  jacobian[0])
           + dot(body1.angularVelocity, jacobian[1])
           + dot(body2.linearVelocity,  jacobian[2])
@@ -189,15 +187,15 @@ class DistanceConstraint: Constraint
             body2.angularVelocity += jacobian[3] * lambda * body2.invInertiaTensor;
         }
     }
-	
-	void free()
-	{
-	    Delete(this);
-	}
+
+	  void free()
+	  {
+	      Delete(this);
+	  }
 }
 
 /*
- * Limits the translation so that the local anchor points of two rigid bodies 
+ * Limits the translation so that the local anchor points of two rigid bodies
  * match in world space.
  */
 class BallConstraint: Constraint
@@ -205,13 +203,13 @@ class BallConstraint: Constraint
     Vector3f localAnchor1, localAnchor2;
     Vector3f r1, r2;
 
-    Vector3f[4] jacobian; 
-   
+    Vector3f[4] jacobian;
+
     float accumulatedImpulse = 0.0f;
-    
+
     float biasFactor = 0.1f;
     float softness = 0.01f; //0.05f;
-    
+
     float softnessOverDt;
     float effectiveMass;
     float bias;
@@ -220,11 +218,11 @@ class BallConstraint: Constraint
     {
         this.body1 = body1;
         this.body2 = body2;
-        
+
         localAnchor1 = anchor1;
         localAnchor2 = anchor2;
     }
-    
+
     override void prepare(double delta)
     {
         Vector3f r1 = body1.orientation.rotate(localAnchor1);
@@ -244,8 +242,8 @@ class BallConstraint: Constraint
         jacobian[2] = n;
         jacobian[3] = cross(r2, n);
 
-        effectiveMass = 
-            body1.invMass + 
+        effectiveMass =
+            body1.invMass +
             body2.invMass +
             dot(jacobian[1] * body1.invInertiaTensor, jacobian[1]) +
             dot(jacobian[3] * body2.invInertiaTensor, jacobian[3]);
@@ -268,7 +266,7 @@ class BallConstraint: Constraint
             body2.angularVelocity += jacobian[3] * body2.invInertiaTensor * accumulatedImpulse;
         }
     }
-    
+
     override void step()
     {
         float jv =
@@ -294,11 +292,11 @@ class BallConstraint: Constraint
             body2.angularVelocity += jacobian[3] * body2.invInertiaTensor * lambda;
         }
     }
-	
-	void free()
-	{
-	    Delete(this);
-	}
+
+    void free()
+	  {
+	      Delete(this);
+	  }
 }
 
 /*
@@ -312,13 +310,13 @@ class SliderConstraint: Constraint
     Vector3f localAnchor1, localAnchor2;
     Vector3f r1, r2;
 
-    Vector3f[4] jacobian; 
-   
+    Vector3f[4] jacobian;
+
     float accumulatedImpulse = 0.0f;
-    
+
     float biasFactor = 0.5f;
     float softness = 0.0f;
-    
+
     float softnessOverDt;
     float effectiveMass;
     float bias;
@@ -327,11 +325,11 @@ class SliderConstraint: Constraint
     {
         this.body1 = body1;
         this.body2 = body2;
-        
+
         localAnchor1 = lineStartPointBody1;
         localAnchor2 = pointBody2;
 
-        lineNormal = (lineStartPointBody1 + body1.worldCenterOfMass) - 
+        lineNormal = (lineStartPointBody1 + body1.worldCenterOfMass) -
                      (pointBody2 + body2.worldCenterOfMass);
 
         if (lineNormal.lengthsqr != 0.0f)
@@ -361,8 +359,8 @@ class SliderConstraint: Constraint
         jacobian[2] = -t;
         jacobian[3] = -cross(r2, t);
 
-        effectiveMass = 
-            body1.invMass + 
+        effectiveMass =
+            body1.invMass +
             body2.invMass +
             dot(jacobian[1] * body1.invInertiaTensor, jacobian[1]) +
             dot(jacobian[3] * body2.invInertiaTensor, jacobian[3]);
@@ -413,11 +411,11 @@ class SliderConstraint: Constraint
             body2.angularVelocity += lambda * jacobian[3] * body2.invInertiaTensor;
         }
     }
-	
-	void free()
-	{
-	    Delete(this);
-	}
+
+    void free()
+	  {
+	      Delete(this);
+	  }
 }
 
 /*
@@ -426,13 +424,13 @@ class SliderConstraint: Constraint
  */
 class AngleConstraint: Constraint
 {
-    Vector3f[4] jacobian; 
-   
+    Vector3f[4] jacobian;
+
     Vector3f accumulatedImpulse = Vector3f(0, 0, 0);
-    
+
     float biasFactor = 0.05f;
     float softness = 0.0f;
-    
+
     float softnessOverDt;
     Matrix3x3f effectiveMass;
     Vector3f bias;
@@ -495,11 +493,11 @@ class AngleConstraint: Constraint
         if (body2.dynamic)
             body2.angularVelocity += -lambda * body2.invInertiaTensor;
     }
-	
-	void free()
-	{
-	    Delete(this);
-	}
+
+    void free()
+	  {
+	      Delete(this);
+	  }
 }
 
 /*
@@ -520,7 +518,7 @@ class AxisAngleConstraint: Constraint
 
     float biasFactor = 0.4f;
     float softness = 0.0f;
-    
+
     float softnessOverDt;
     Matrix3x3f effectiveMass;
     Vector3f bias;
@@ -531,14 +529,14 @@ class AxisAngleConstraint: Constraint
         this.body2 = body2;
         this.axis = axis;
 
-        // Axis in body space 
+        // Axis in body space
         this.localAxis1 = axis * body1.orientation.toMatrix3x3.transposed;
         this.localAxis2 = axis * body2.orientation.toMatrix3x3.transposed;
 
         localConstrAxis1 = cross(Vector3f(0, 1, 0), localAxis1);
         if (localConstrAxis1.lengthsqr < 0.001f)
             localConstrAxis1 = cross(Vector3f(1, 0, 0), localAxis1);
-            
+
         localConstrAxis2 = cross(localAxis1, localConstrAxis1);
         localConstrAxis1.normalize();
         localConstrAxis2.normalize();
@@ -574,11 +572,11 @@ class AxisAngleConstraint: Constraint
         bias = errorAxis * biasFactor * (-1.0f / dt);
 
         Vector3f impulse;
-        impulse.x = worldConstrAxis1.x * accumulatedImpulse.x 
+        impulse.x = worldConstrAxis1.x * accumulatedImpulse.x
                   + worldConstrAxis2.x * accumulatedImpulse.y;
-        impulse.y = worldConstrAxis1.y * accumulatedImpulse.x 
+        impulse.y = worldConstrAxis1.y * accumulatedImpulse.x
                   + worldConstrAxis2.y * accumulatedImpulse.y;
-        impulse.z = worldConstrAxis1.z * accumulatedImpulse.x 
+        impulse.z = worldConstrAxis1.z * accumulatedImpulse.x
                   + worldConstrAxis2.z * accumulatedImpulse.y;
 
         if (body1.dynamic)
@@ -609,11 +607,11 @@ class AxisAngleConstraint: Constraint
         if (body2.dynamic)
             body2.angularVelocity += -impulse * body2.invInertiaTensor;
     }
-	
-	void free()
-	{
-	    Delete(this);
-	}
+
+    void free()
+	  {
+	      Delete(this);
+	  }
 }
 
 /*
@@ -632,7 +630,7 @@ class PrismaticConstraint: Constraint
         this.body2 = body2;
 
         ac = New!AngleConstraint(body1, body2);
-        sc = New!SliderConstraint(body1, body2, 
+        sc = New!SliderConstraint(body1, body2,
             Vector3f(0, 0, 0), Vector3f(0, 0, 0));
     }
 
@@ -647,13 +645,17 @@ class PrismaticConstraint: Constraint
         ac.step();
         sc.step();
     }
-	
-	void free()
-	{
-	    ac.free();
-		sc.free();
-		Delete(this);
-	}
+
+    ~this()
+    {
+        ac.free();
+        sc.free();
+    }
+
+	  void free()
+	  {
+		    Delete(this);
+	  }
 }
 
 /*
@@ -667,10 +669,10 @@ class HingeConstraint: Constraint
     AxisAngleConstraint aac;
     BallConstraint bc;
 
-    this(RigidBody body1, 
-         RigidBody body2, 
+    this(RigidBody body1,
+         RigidBody body2,
          Vector3f anchor1,
-         Vector3f anchor2, 
+         Vector3f anchor2,
          Vector3f axis)
     {
         this.body1 = body1;
@@ -691,12 +693,15 @@ class HingeConstraint: Constraint
         aac.step();
         bc.step();
     }
-	
-	void free()
-	{
-	    aac.free();
-		bc.free();
-		Delete(this);
-	}
-}
 
+    ~this()
+    {
+        aac.free();
+        bc.free();
+    }
+
+	  void free()
+	  {
+		    Delete(this);
+	  }
+}

@@ -1,5 +1,5 @@
 /*
-Copyright (c) 2013-2015 Timur Gafarov 
+Copyright (c) 2013-2015 Timur Gafarov
 
 Boost Software License - Version 1.0 - August 17th, 2003
 
@@ -48,14 +48,14 @@ enum GeomType
     Triangle
 }
 
-abstract class Geometry: ManuallyAllocatable
+abstract class Geometry: Freeable
 {
     GeomType type = GeomType.Undefined;
 
     this()
     {
     }
-    
+
     Vector3f supportPoint(Vector3f dir)
     {
         return Vector3f(0.0f, 0.0f, 0.0f);
@@ -70,15 +70,12 @@ abstract class Geometry: ManuallyAllocatable
     {
         return AABB(position, Vector3f(1.0f, 1.0f, 1.0f));
     }
-    
-    mixin FreeImpl;
-    mixin ManualModeImpl;
 }
 
 class GeomSphere: Geometry
 {
     float radius;
-    
+
     this(float r)
     {
         super();
@@ -106,8 +103,11 @@ class GeomSphere: Geometry
     {
         return AABB(position, Vector3f(radius, radius, radius));
     }
-    
-    mixin FreeImpl;
+
+    void free()
+	  {
+		    Delete(this);
+	  }
 }
 
 class GeomBox: Geometry
@@ -147,18 +147,21 @@ class GeomBox: Geometry
 
     override AABB boundingBox(Vector3f position)
     {
-        return AABB(position, 
+        return AABB(position,
             Vector3f(bsphereRadius, bsphereRadius, bsphereRadius));
     }
-    
-    mixin FreeImpl;
+
+    void free()
+	  {
+		    Delete(this);
+	  }
 }
 
 class GeomCylinder: Geometry
 {
     float height;
     float radius;
-    
+
     this(float h, float r)
     {
         super();
@@ -184,10 +187,10 @@ class GeomCylinder: Geometry
             result.y = sign(dir.y) * height * 0.5f;
             result.z = 0.0f;
         }
-        
+
         return result;
     }
-    
+
     override Matrix3x3f inertiaTensor(float mass)
     {
         float r2 = radius * radius;
@@ -206,8 +209,11 @@ class GeomCylinder: Geometry
         float d = sqrt(rsum * rsum + height * height) * 0.5f;
         return AABB(position, Vector3f(d, d, d));
     }
-    
-    mixin FreeImpl;
+
+    void free()
+	  {
+		    Delete(this);
+	  }
 }
 
 class GeomCone: Geometry
@@ -263,8 +269,11 @@ class GeomCone: Geometry
         float d = sqrt(rsum * rsum + height * height) * 0.5f;
         return AABB(position, Vector3f(d, d, d));
     }
-    
-    mixin FreeImpl;
+
+    void free()
+	  {
+		    Delete(this);
+	  }
 }
 
 class GeomEllipsoid: Geometry
@@ -282,7 +291,7 @@ class GeomEllipsoid: Geometry
     {
         return dir.normalized * radii;
     }
-    
+
     override Matrix3x3f inertiaTensor(float mass)
     {
         float x2 = radii.x * radii.x;
@@ -300,14 +309,17 @@ class GeomEllipsoid: Geometry
     {
         return AABB(position, radii);
     }
-    
-    mixin FreeImpl;
+
+    void free()
+	  {
+		    Delete(this);
+	  }
 }
 
 class GeomTriangle: Geometry
 {
     Vector3f[3] v;
-    
+
     this(Vector3f a, Vector3f b, Vector3f c)
     {
         super();
@@ -322,7 +334,7 @@ class GeomTriangle: Geometry
         float dota = dir.dot(v[0]);
         float dotb = dir.dot(v[1]);
         float dotc = dir.dot(v[2]);
-    
+
         if (dota > dotb)
         {
             if (dotc > dota)
@@ -340,7 +352,9 @@ class GeomTriangle: Geometry
     }
 
     // TODO: boundingBox
-    
-    mixin FreeImpl;
-}
 
+    void free()
+	  {
+		    Delete(this);
+	  }
+}

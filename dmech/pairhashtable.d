@@ -1,5 +1,5 @@
 /*
-Copyright (c) 2014-2015 Timur Gafarov 
+Copyright (c) 2014-2015 Timur Gafarov
 
 Boost Software License - Version 1.0 - August 17th, 2003
 
@@ -60,7 +60,6 @@ class PairHashTable(T): HashTable!(T, uint)
 
     override void free()
     {
-        super.freeContent();
         Delete(this);
     }
 }
@@ -69,4 +68,3 @@ uint szudzikPair(uint a, uint b)
 {
     return a >= b ? a * a + a + b : a + b * b;
 }
-

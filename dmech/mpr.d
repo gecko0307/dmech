@@ -1,5 +1,5 @@
 /*
-Copyright (c) 2013-2014 Timur Gafarov 
+Copyright (c) 2013-2014 Timur Gafarov
 
 Boost Software License - Version 1.0 - August 17th, 2003
 
@@ -49,7 +49,7 @@ void supportTransformed(ShapeComponent s, Vector3f dir, out Vector3f result)
     result.y = ((dir.x * m.a12) + (dir.y * m.a22)) + (dir.z * m.a32);
     result.z = ((dir.x * m.a13) + (dir.y * m.a23)) + (dir.z * m.a33);
 
-    result = s.supportPoint(result);
+    result = s.geometry.supportPoint(result);
 
     float x = ((result.x * m.a11) + (result.y * m.a12)) + (result.z * m.a13);
     float y = ((result.x * m.a21) + (result.y * m.a22)) + (result.z * m.a23);
@@ -66,13 +66,13 @@ void supportTransformed(ShapeComponent s, Vector3f dir, out Vector3f result)
  */
 
 bool MPRCollisionTest(
-    ShapeComponent s1, 
+    ShapeComponent s1,
     ShapeComponent s2,
     ref Contact c)
 {
     enum float collideEpsilon = 1e-4f;
     enum maxIterations = 10;
-    
+
     // Used variables
     Vector3f temp1;
     Vector3f v01, v02, v0;
@@ -83,7 +83,7 @@ bool MPRCollisionTest(
 
     Matrix4x4f transform1 = s1.transformation;
     Matrix4x4f transform2 = s2.transformation;
-        
+
     // Initialization of the output
     c.point = Vector3f(0.0f, 0.0f, 0.0f);
     c.normal = Vector3f(0.0f, 0.0f, 0.0f);
@@ -91,30 +91,30 @@ bool MPRCollisionTest(
 
     // Get the center of shape1 in world coordinates
     v01 = transform1.translation;
-        
+
     // Get the center of shape2 in world coordinates
     v02 = transform2.translation;
-        
+
     // v0 is the center of the Minkowski difference
     v0 = v02 - v01;
-        
+
     // Avoid case where centers overlap - any direction is fine in this case
-    if (v0.isAlmostZero) 
+    if (v0.isAlmostZero)
         v0 = Vector3f(0.00001f, 0.0f, 0.0f);
-            
+
     // v1 = support in direction of origin
     c.normal = -v0;
-        
+
     supportTransformed(s1, v0, v11);
     supportTransformed(s2, c.normal, v12);
     v1 = v12 - v11;
-        
+
     if (dot(v1, c.normal) <= 0.0f)
         return false;
-            
+
     // v2 = support perpendicular to v1,v0
     c.normal = cross(v1, v0);
-        
+
     if (c.normal.isAlmostZero)
     {
         c.normal = v1 - v0;
@@ -128,19 +128,19 @@ bool MPRCollisionTest(
 
         return true;
     }
-        
+
     supportTransformed(s1, -c.normal, v21);
-    supportTransformed(s2,  c.normal, v22);        
+    supportTransformed(s2,  c.normal, v22);
     v2 = v22 - v21;
 
     if (dot(v2, c.normal) <= 0.0f)
         return false;
-            
+
     // Determine whether origin is on + or - side of plane (v1,v0,v2)
     c.normal = cross(v1 - v0, v2 - v0);
-        
+
     float dist = dot(c.normal, v0);
-        
+
     // If the origin is on the - side of the plane, reverse the direction of the plane
     if (dist > 0.0f)
     {
@@ -149,11 +149,11 @@ bool MPRCollisionTest(
         swap(&v12, &v22);
         c.normal = -c.normal;
     }
-        
+
     int phase2 = 0;
     int phase1 = 0;
     bool hit = false;
-        
+
     // Phase One: Identify a portal
     while (true)
     {
@@ -167,10 +167,10 @@ bool MPRCollisionTest(
         supportTransformed(s1, -c.normal, v31);
         supportTransformed(s2,  c.normal, v32);
         v3 = v32 - v31;
-            
+
         if (dot(v3, c.normal) <= 0.0f)
             return false;
-     
+
         // If origin is outside (v1,v0,v3), then eliminate v2 and loop
         temp1 = cross(v1, v3);
         if (dot(temp1, v0) < 0.0f)
@@ -181,7 +181,7 @@ bool MPRCollisionTest(
             c.normal = cross(v1 - v0, v3 - v0);
             continue;
         }
-            
+
         // If origin is outside (v3,v0,v2), then eliminate v1 and loop
         temp1 = cross(v3, v2);
         if (dot(temp1, v0) < 0.0f)
@@ -192,29 +192,29 @@ bool MPRCollisionTest(
             c.normal = cross(v3 - v0, v2 - v0);
             continue;
         }
-            
+
         // Phase Two: Refine the portal
         // We are now inside of a wedge...
         while (true)
         {
             phase2++;
-                
+
             // Compute normal of the wedge face
             c.normal = cross(v2 - v1, v3 - v1);
-                
+
             // Can this happen? Can it be handled more cleanly?
             //if (c.normal.isAlmostZero)
             //    return true;
-                    
+
             c.normal.normalize();
-                
+
             // Compute distance from origin to wedge face
             float d = dot(c.normal, v1);
-                
+
             // If the origin is inside the wedge, we have a hit
             if (d >= 0 && !hit)
                 hit = true;
-                
+
             // Find the support point in the direction of the wedge face
             supportTransformed(s1, -c.normal, v41);
             supportTransformed(s2,  c.normal, v42);
@@ -222,8 +222,8 @@ bool MPRCollisionTest(
 
             float delta = dot(v4 - v3, c.normal);
             c.penetration = dot(v4, c.normal);
-                
-            // If the boundary is thin enough or the origin is outside 
+
+            // If the boundary is thin enough or the origin is outside
             // the support plane for the newly discovered vertex, then we can terminate
             if (delta <= collideEpsilon || c.penetration <= 0.0f || phase2 > maxIterations)
             {
@@ -233,9 +233,9 @@ bool MPRCollisionTest(
                     float b1 = dot(cross(v3, v2), v0);
                     float b2 = dot(cross(v0, v1), v3);
                     float b3 = dot(cross(v2, v1), v0);
-                        
+
                     float sum = b0 + b1 + b2 + b3;
-                        
+
                     if (sum <= 0)
                     {
                         b0 = 0;
@@ -245,29 +245,29 @@ bool MPRCollisionTest(
 
                         sum = b1 + b2 + b3;
                     }
-                        
+
                     float inv = 1.0f / sum;
-                     
+
                     c.point = v01 * b0;
                     c.point += v11 * b1;
                     c.point += v21 * b2;
                     c.point += v31 * b3;
-                        
+
                     c.point += v02 * b0;
                     c.point += v12 * b1;
                     c.point += v22 * b2;
                     c.point += v32 * b3;
-                       
+
                     c.point *= inv * 0.5f;
                 }
-                   
+
                 return hit;
             }
-                
+
             // Compute the tetrahedron dividing face (v4,v0,v3)
             temp1 = cross(v4, v0);
             float d2 = dot(temp1, v1);
-                
+
             if (d2 >= 0.0f)
             {
                 d2 = dot(temp1, v2);
@@ -307,8 +307,7 @@ bool MPRCollisionTest(
             }
         }
     }
-    
+
     // Should never get here
     return false;
 }
-

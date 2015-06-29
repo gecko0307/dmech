@@ -1,5 +1,5 @@
 /*
-Copyright (c) 2014-2015 Timur Gafarov 
+Copyright (c) 2014-2015 Timur Gafarov
 
 Boost Software License - Version 1.0 - August 17th, 2003
 
@@ -45,7 +45,7 @@ import dmech.geometry;
  * One Geometry can be shared between multiple ShapeComponents.
  */
 
-class ShapeComponent: ManuallyAllocatable
+class ShapeComponent: Freeable
 {
     Geometry geometry; // geometry
     Vector3f centroid; // position in body space
@@ -54,7 +54,7 @@ class ShapeComponent: ManuallyAllocatable
 
     Matrix4x4f _transformation;
 
-    alias geometry this;
+    //alias geometry this;
 
     bool locked = false;
 
@@ -94,7 +94,7 @@ class ShapeComponent: ManuallyAllocatable
         return geometry.boundingBox(
             _transformation.translation);
     }
-    
+
     @property Sphere boundingSphere()
     {
         AABB aabb = geometry.boundingBox(
@@ -123,13 +123,9 @@ class ShapeComponent: ManuallyAllocatable
 
         return result;
     }
-    
+
     void free()
     {
-        geometry = null;
         Delete(this);
     }
-    
-    mixin ManualModeImpl;
 }
-
