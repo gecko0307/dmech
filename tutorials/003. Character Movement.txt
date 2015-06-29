@@ -1,0 +1,82 @@
+Character Movement
+------------------
+
+Realistically behaving rigid bodies are cool, but what if we want more precise control over them? For example, imagine a first person shooter where character can turn around, walk, strafe and jump (the same applies for third-person games as well). One, of course, can use forces for that, but the result would be far from realistic - the problem is, forces always act during some time, so the character, once moved due to a force on a key press, won't immediately stop when the player releases the key. 
+
+A rather naive approach to achieve 'immediate' movement is to directly modify character's position. This is a common mistake. Changing position violates the energy conservation law, which states that the total energy of an isolated physics system remains constant over time. If you directly change body's position, the physics engine just won't be able to correctly process its interactions with other bodies. For example, your character will push other objects through walls and floor, which is obviously not what you want in most of the cases.
+
+Fortunately, there's an easy solution: directly modifying character's velocity. Knowing velocity that the character should move with ('target velocity'), we compute an immediate change in velocity that will correct it.
+We can start by defining a Character class which will store RigidBody and keep track of its movement:
+
+    class Character
+    {
+        RigidBody rbody;
+        Vector3f direction = Vector3f(0, 0, 1);
+        float speed = 0;
+    
+        this(RigidBody rb)
+        {
+            rbody = rb;
+        }
+    
+        void move(Vector3f dir, float spd)
+        {
+            direction = dir;
+            speed = spd;
+        }
+    
+        void update()
+        {
+            Vector3f targetVelocity = direction * speed;
+            Vector3f velocityChange = targetVelocity - rbody.linearVelocity;
+            rbody.linearVelocity += velocityChange;
+            speed = 0;
+        }
+    }
+
+Now, using the code from previous tutorial, the user interaction will look like this:
+
+    while(app.running)
+    {
+        time += deltaTime;
+        if (time >= fixedTimeStep)
+        {
+            time -= fixedTimeStep;
+        
+            if (keyPressed['w']) character.move(forward,  10.0f);
+            if (keyPressed['s']) character.move(backward, 10.0f);
+            if (keyPressed['a']) character.move(left,     10.0f);
+            if (keyPressed['d']) character.move(right,    10.0f);
+            character.update();
+        
+            world.update(fixedTimeStep);
+        }
+
+        // Draw the graphics
+    }
+
+`forward`, `backward`, `left` and `right` vectors usually are retrieved from first-person camera. The speed is measured in meters per second. `keyPressed` is a continuous check, which should return true until user releases the key.
+
+Now, if your character hits a wall or pushes other rigid bodies, the engine will correct its new velocity and all the interactions will remain realistic.
+
+Jumping, on the other hand, is not so easy. Generally, to do jumping you should find a way to know if your character is standing on the ground. If you have that, you can do the following:
+
+    class Character
+    {
+        // ...
+    
+        bool onGround;
+    
+        //...
+    
+        void jump(float spd)
+        {
+            if (onGround)
+            {
+                rbody.linearVelocity.y = spd;
+                onGround = false;
+            }
+        }
+    }
+
+Testing for `onGround` is a tricky task, we will probably return to it in another tutorial.
