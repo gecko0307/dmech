@@ -134,10 +134,13 @@ void solveContact(Contact* c, double dt)
 
     Vector3f impulseVec = c.normal * normalImpulse;
 
-    impulseVec += fVec;
+    //impulseVec += fVec;
 
     body1.applyImpulse(+impulseVec, c.point);
     body2.applyImpulse(-impulseVec, c.point);
+    
+    if (body1.useFriction) body1.applyImpulse(+fVec, c.point);
+    if (body2.useFriction) body2.applyImpulse(-fVec, c.point);
 }
 
 void solvePositionError(Contact* c, uint numContacts)

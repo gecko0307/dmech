@@ -77,7 +77,7 @@ class PhysicsWorld: Freeable
     bool warmstart = false;
 
     uint positionCorrectionIterations = 10;
-    uint constraintIterations = 20;
+    uint constraintIterations = 30;
 
     BVHNode!Triangle bvhRoot = null;
 

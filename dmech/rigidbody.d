@@ -100,6 +100,7 @@ class RigidBody: Freeable
 
     bool raycastable = true;
     uint numContacts = 0;
+    bool useFriction = true;
 
     this()
     {
@@ -135,7 +136,7 @@ class RigidBody: Freeable
         torqueAccumulator = Vector3f(0.0f, 0.0f, 0.0f);
 
         bounce = 0.0f;
-        friction = 0.9f;
+        friction = 0.5f;
 
         dynamic = true;
     }
