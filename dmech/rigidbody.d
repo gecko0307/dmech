@@ -101,6 +101,8 @@ class RigidBody: Freeable
     bool raycastable = true;
     uint numContacts = 0;
     bool useFriction = true;
+    
+    float maxSpeed = float.max;
 
     this()
     {
@@ -207,8 +209,13 @@ class RigidBody: Freeable
         float d = clamp(1.0f - dt * damping, 0.0f, 1.0f);
         linearVelocity *= d;
         angularVelocity *= d;
+        
+        float speed = linearVelocity.length;
+        
+        if (speed > maxSpeed)
+            linearVelocity = linearVelocity.normalized * maxSpeed;
 
-        if (linearVelocity.length > stopThreshold || numContacts < 3)
+        if (speed > stopThreshold || numContacts < 3)
         {
             position += linearVelocity * dt;
         }

@@ -78,6 +78,8 @@ struct Contact
             fdir1 = cross(normal, Vector3f(1,0,0)); 
         else
             fdir1 = cross(normal, Vector3f(0,0,1));
+         
+        //fdir1 = cross(randomUnitVector3!float, normal);
         fdir2 = cross(fdir1, normal);
         fdir1.normalize();
         fdir2.normalize();

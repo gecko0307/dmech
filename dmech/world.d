@@ -443,8 +443,7 @@ class PhysicsWorld: Freeable
                 //if (groundness > 0.7f)
                 //    rb.onGround = true;
             }
-
-
+            
             if (deepestContactIdx >= 0)
             {
                 auto co = &contacts[deepestContactIdx];
@@ -457,8 +456,8 @@ class PhysicsWorld: Freeable
                     m1.addContact(*co);
                     manifolds.set(shape.id, proxyTriShape.id, m1);
 
-                    c.body1.contactEvent(c);
-                    c.body2.contactEvent(c);
+                    //c.body1.contactEvent(c);
+                    //c.body2.contactEvent(c);
                 }
                 else
                 {
@@ -467,6 +466,9 @@ class PhysicsWorld: Freeable
 
                 c.body1.numContacts++;
                 c.body2.numContacts++;
+                
+                c.body1.contactEvent(*co);
+                c.body2.contactEvent(*co);
             }
             else
             {

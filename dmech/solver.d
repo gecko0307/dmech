@@ -134,8 +134,6 @@ void solveContact(Contact* c, double dt)
 
     Vector3f impulseVec = c.normal * normalImpulse;
 
-    //impulseVec += fVec;
-
     body1.applyImpulse(+impulseVec, c.point);
     body2.applyImpulse(-impulseVec, c.point);
     
