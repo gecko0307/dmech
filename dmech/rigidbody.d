@@ -74,6 +74,7 @@ class RigidBody: Freeable
     float bounce;
     float friction;
 
+    bool active = true;
     bool useGravity = true;
     bool enableRotation = true;
 
@@ -189,7 +190,7 @@ class RigidBody: Freeable
 
     void integrateForces(float dt)
     {
-        if (!dynamic)
+        if (!active || !dynamic)
             return;
 
         linearAcceleration = forceAccumulator * invMass;
@@ -203,7 +204,7 @@ class RigidBody: Freeable
 
     void integrateVelocities(float dt)
     {
-        if (!dynamic)
+        if (!active || !dynamic)
             return;
 
         float d = clamp(1.0f - dt * damping, 0.0f, 1.0f);
@@ -230,7 +231,7 @@ class RigidBody: Freeable
 
     void integratePseudoVelocities(float dt)
     {
-        if (!dynamic)
+        if (!active || !dynamic)
             return;
 
         float d = clamp(1.0f - dt * damping, 0.0f, 1.0f);
@@ -261,7 +262,7 @@ class RigidBody: Freeable
 
     void updateInertia()
     {
-        if (dynamic)
+        if (active && dynamic)
         {
             auto rot = orientation.toMatrix3x3;
             invInertiaTensor = (rot * inertiaTensor * rot.transposed).inverse;
@@ -284,7 +285,7 @@ class RigidBody: Freeable
 
     void applyForce(Vector3f force)
     {
-        if (!dynamic)
+        if (!active || !dynamic)
             return;
 
         forceAccumulator += force;
@@ -292,7 +293,7 @@ class RigidBody: Freeable
 
     void applyTorque(Vector3f torque)
     {
-        if (!dynamic)
+        if (!active || !dynamic)
             return;
 
         torqueAccumulator += torque;
@@ -300,7 +301,7 @@ class RigidBody: Freeable
 
     void applyImpulse(Vector3f impulse, Vector3f point)
     {
-        if (!dynamic)
+        if (!active || !dynamic)
             return;
 
         linearVelocity += impulse * invMass;
@@ -310,7 +311,7 @@ class RigidBody: Freeable
 
     void applyPseudoImpulse(Vector3f impulse, Vector3f point)
     {
-        if (!dynamic)
+        if (!active || !dynamic)
             return;
 
         pseudoLinearVelocity += impulse * invMass;
@@ -320,7 +321,7 @@ class RigidBody: Freeable
 
     @property float linearKineticEnergy()
     {
-        if (!dynamic)
+        if (!active || !dynamic)
             return float.infinity;
 
         // 0.5 * m * v^2
@@ -330,7 +331,7 @@ class RigidBody: Freeable
 
     @property float angularKineticEnergy()
     {
-        if (!dynamic)
+        if (!active || !dynamic)
             return float.infinity;
 
         // 0.5 * w * I * w

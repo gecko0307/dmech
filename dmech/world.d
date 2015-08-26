@@ -248,7 +248,7 @@ class PhysicsWorld: Freeable
 
         if (checkAgainstBodies)
         foreach(b; chain(staticBodies.data, dynamicBodies.data))
-        if (b.raycastable)
+        if (b.active && b.raycastable)
         foreach(shape; b.shapes.data)
         {
             bool hit = convexRayCast(shape, rayStart, rayDir, maxRayDist, cr);
@@ -301,11 +301,13 @@ class PhysicsWorld: Freeable
         for (int i = 0; i < dynamicBodiesArray.length - 1; i++)
         {
             auto body1 = dynamicBodiesArray[i];
+            if (body1.active)
             foreach(shape1; body1.shapes.data)
             {
                 for (int j = i + 1; j < dynamicBodiesArray.length; j++)
                 {
                     auto body2 = dynamicBodiesArray[j];
+                    if (body2.active)
                     foreach(shape2; body2.shapes.data)
                     {
                         Contact c;
@@ -324,11 +326,13 @@ class PhysicsWorld: Freeable
         for (int i = 0; i < dynamicBodiesArray.length - 1; i++)
         {
             auto body1 = dynamicBodiesArray[i];
+            if (body1.active)
             foreach(shape1; body1.shapes.data)
             {
                 for (int j = i + 1; j < dynamicBodiesArray.length; j++)
                 {
                     auto body2 = dynamicBodiesArray[j];
+                    if (body2.active)
                     foreach(shape2; body2.shapes.data)
                     if (shape1.boundingBox.intersectsAABB(shape2.boundingBox))
                     {
@@ -348,10 +352,12 @@ class PhysicsWorld: Freeable
         auto staticBodiesArray = staticBodies.data;
         foreach(body1; dynamicBodiesArray)
         {
+            if (body1.active)
             foreach(shape1; body1.shapes.data)
             {
                 foreach(body2; staticBodiesArray)
                 {
+                    if (body2.active)
                     foreach(shape2; body2.shapes.data)
                     {
                         Contact c;
@@ -375,6 +381,7 @@ class PhysicsWorld: Freeable
     void checkCollisionBVH()
     {
         foreach(rb; dynamicBodies.data)
+        if (rb.active)
         foreach(shape; rb.shapes.data)
         {
             // There may be more than one contact at a time
