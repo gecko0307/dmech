@@ -22,21 +22,26 @@ Already implemented:
 * Body constraints: distance, angular, slider, ball-socket, prismatic, hinge
 * Persistent contact cache
 * Ray cast support
+* Partial C API (will be finished soon)
 
 Planned in future:
 * More shapes (capsule, plane, convex hull, etc.)
 * Minkowski sum shape
 * Force fields
 * Convex cast
-* In long-term: vehicle engine, particles, soft-body physics
+* In long-term: vehicle engine, particles, soft-body physics, OpenCL support
 
 Dependencies
 ------------
 dmech heavily relies on [dlib](http://github.com/gecko0307/dlib) - a collection of utility libraries for D, including linear math and computational geometry functionality (it is recommended to use master, because dmech usually depends on latest repository changes).
 
+Documentation
+-------------
+See [tutorials](/tutorials).
+
 Usage examples
 --------------
-See [demos](/demos) directory. All examples use [DGL](http://github.com/gecko0307/dgl) for rendering. Warning: demos may be not up-to-date with latest changes in dmech and DGL source code, please apologize for the inconvenience.
+See [demos](/demos) directory. All examples use [DGL](http://github.com/gecko0307/dgl) for rendering. Warning: demos may be not up-to-date with latest changes in dmech and DGL, please apologize for the inconvenience.
 
 Precompiled demos (for Windows):
 * [Third person game](https://www.dropbox.com/s/oks658nrzc9hz8n/third-person-game-robot-win32.zip?dl=0)
