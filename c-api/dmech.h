@@ -54,5 +54,11 @@ void dmBodyGetInertiaTensor(void* pBody, float* inertia);
 void dmBodyGetInvInertiaTensor(void* pBody, float* inertia);
 void dmBodySetActive(void* pBody, int active);
 int dmBodyGetActive(void* pBody);
+int dmBodyGetNumCollisionShapes(void* pBody);
+void* dmBodyGetCollisionShape(void* pBody, unsigned int index);
+void dmBodySetBounce(void* pBody, float bounce);
+float dmBodyGetBounce(void* pBody);
+void dmBodySetFriction(void* pBody, float friction);
+float dmBodyGetFriction(void* pBody);
 
 #endif

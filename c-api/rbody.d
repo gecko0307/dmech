@@ -6,7 +6,7 @@ import dmech.rigidbody;
 
 extern(C):
 
-void dmBodyGetPosition(void* pBody, float* px, float* py, float* pz)
+export void dmBodyGetPosition(void* pBody, float* px, float* py, float* pz)
 {
     RigidBody rb = cast(RigidBody)pBody;        
     if (rb)
@@ -17,7 +17,7 @@ void dmBodyGetPosition(void* pBody, float* px, float* py, float* pz)
     }
 }
 
-void dmBodyGetOrientation(void* pBody, float* x, float* y, float* z, float* w)
+export void dmBodyGetOrientation(void* pBody, float* x, float* y, float* z, float* w)
 {
     RigidBody rb = cast(RigidBody)pBody;        
     if (rb)
@@ -29,7 +29,7 @@ void dmBodyGetOrientation(void* pBody, float* x, float* y, float* z, float* w)
     }
 }
 
-void dmBodyGetMatrix(void* pBody, float* m4x4)
+export void dmBodyGetMatrix(void* pBody, float* m4x4)
 {
     RigidBody rb = cast(RigidBody)pBody;        
     if (rb)
@@ -40,7 +40,7 @@ void dmBodyGetMatrix(void* pBody, float* m4x4)
     }
 }
 
-void dmBodyGetVelocity(void* pBody, float* vx, float* vy, float* vz)
+export void dmBodyGetVelocity(void* pBody, float* vx, float* vy, float* vz)
 {
     RigidBody rb = cast(RigidBody)pBody;        
     if (rb)
@@ -51,7 +51,7 @@ void dmBodyGetVelocity(void* pBody, float* vx, float* vy, float* vz)
     }
 }
 
-void dmBodyGetAngularVelocity(void* pBody, float* ax, float* ay, float* az)
+export void dmBodyGetAngularVelocity(void* pBody, float* ax, float* ay, float* az)
 {
     RigidBody rb = cast(RigidBody)pBody;        
     if (rb)
@@ -62,7 +62,7 @@ void dmBodyGetAngularVelocity(void* pBody, float* ax, float* ay, float* az)
     }
 }
 
-float dmBodyGetMass(void* pBody)
+export float dmBodyGetMass(void* pBody)
 {
     RigidBody rb = cast(RigidBody)pBody;        
     if (rb)
@@ -73,7 +73,7 @@ float dmBodyGetMass(void* pBody)
         return -1.0f;
 }
 
-void dmBodyGetInertiaTensor(void* pBody, float* inertia)
+export void dmBodyGetInertiaTensor(void* pBody, float* inertia)
 {
     RigidBody rb = cast(RigidBody)pBody;        
     if (rb)
@@ -83,7 +83,7 @@ void dmBodyGetInertiaTensor(void* pBody, float* inertia)
     }
 }
 
-void dmBodyGetInvInertiaTensor(void* pBody, float* inertia)
+export void dmBodyGetInvInertiaTensor(void* pBody, float* inertia)
 {
     RigidBody rb = cast(RigidBody)pBody;        
     if (rb)
@@ -93,7 +93,7 @@ void dmBodyGetInvInertiaTensor(void* pBody, float* inertia)
     }
 }
 
-void dmBodySetActive(void* pBody, int active)
+export void dmBodySetActive(void* pBody, int active)
 {
     RigidBody rb = cast(RigidBody)pBody;        
     if (rb)
@@ -102,7 +102,7 @@ void dmBodySetActive(void* pBody, int active)
     }
 }
 
-int dmBodyGetActive(void* pBody)
+export int dmBodyGetActive(void* pBody)
 {
     RigidBody rb = cast(RigidBody)pBody;        
     if (rb)
@@ -110,4 +110,88 @@ int dmBodyGetActive(void* pBody)
     else
         return 0;
 }
+
+export int dmBodyGetNumCollisionShapes(void* pBody)
+{
+    RigidBody rb = cast(RigidBody)pBody;        
+    if (rb)
+        return rb.shapes.length;
+    else
+        return 0;
+}
+
+export void* dmBodyGetCollisionShape(void* pBody, uint index)
+{
+    RigidBody rb = cast(RigidBody)pBody;        
+    if (rb)
+    {
+        return cast(void*)rb.shapes[index];
+    }
+    else
+        return null;
+}
+
+export void dmBodySetBounce(void* pBody, float bounce)
+{
+    RigidBody rb = cast(RigidBody)pBody;        
+    if (rb)
+        rb.bounce = bounce;
+}
+
+export float dmBodyGetBounce(void* pBody)
+{
+    RigidBody rb = cast(RigidBody)pBody;        
+    if (rb)
+        return rb.bounce;
+    else
+        return 0.0f;
+}
+
+export void dmBodySetFriction(void* pBody, float friction)
+{
+    RigidBody rb = cast(RigidBody)pBody;        
+    if (rb)
+        rb.friction = friction;
+}
+
+export float dmBodyGetFriction(void* pBody)
+{
+    RigidBody rb = cast(RigidBody)pBody;        
+    if (rb)
+        return rb.friction;
+    else
+        return 0.0f;
+}
+
+// TODO:
+/*
+    - dmBodySetUseGravity
+    - dmBodySetEnableRotation
+    - dmBodySetDamping
+    - dmBodySetStopThreshold
+    - dmBodySetUseOwnGravity
+    - dmBodySetGravity
+    - dmBodyAddCollisionCallback
+    - dmBodySetRaycastable
+    - dmBodySetUseFriction
+    - dmBodySetMaxSpeed
+
+    - dmBodyGetCenterOfMass
+    - dmBodyRecalcMass
+
+    - dmBodyApplyForce
+    - dmBodyApplyTorque
+    - dmBodyApplyForceAtPoint
+    - dmBodyApplyForceAtRelPoint
+    - dmBodyGetTotalForce
+    - dmBodyGetTotalTorque
+    - dmBodyApplyImpulse
+    - dmBodyApplyImpulseAtPoint
+    - dmBodyApplyImpulseAtRelPoint
+    - dmBodySetVelocity
+    - dmBodySetAngularVelocity
+    - dmBodySetPosition
+    - dmBodySetRotation
+    - dmBodySetRotationMatrix
+*/
 
