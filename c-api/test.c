@@ -94,6 +94,7 @@ void onDraw()
     }
 
     glutSwapBuffers();
+    //glutPostRedisplay();
 }
 
 void onInit()
@@ -114,8 +115,15 @@ void onInit()
     g3 = dmCreateGeomBox(1, 1, 1);
     g2 = dmCreateGeomSphere(1);
 
+/*
+    int i;
+    for (i = 0; i < MAX_OBJECTS; i++)
+    {
+        addBody(g3, (float)i * 0.1f, 2 + i*2, 0);
+    }
+*/
     buildPyramid(g3, 8);
-    dmBodySetActive(objects[numObjects-5].rbody, 0);
+    dmBodySetActive(objects[numObjects-10].rbody, 0);
 
     GLUquadricObj* quadric = gluNewQuadric();
     gluQuadricNormals(quadric, GLU_SMOOTH);

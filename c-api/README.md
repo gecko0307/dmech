@@ -9,4 +9,4 @@ Building the library with Cook:
 
 Building the test application (bash script):
 
-    $ ./build.sh
+    $ ./buildtest.sh
