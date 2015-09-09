@@ -7,15 +7,21 @@ import dmech;
 class PhysicsEntity: Entity
 {
     ShapeComponent shape;
-    bool highlight = false;
+    RigidBody rbody;
     
-    this(Drawable d, ShapeComponent s)
-    {
-        if (s)
-            super(d, s.position);
+    this(Drawable d, RigidBody rb, uint shapeIndex = 0)
+    {           
+        rbody = rb;
+        
+        if (rbody.shapes.length > shapeIndex)
+        {
+            shape = rbody.shapes[shapeIndex];
+        }
+        
+        if (shape)
+            super(d, shape.position);
         else
             super(d, Vector3f(0, 0, 0));
-        shape = s;
     }
     
     override void draw(double dt)

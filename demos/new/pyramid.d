@@ -2,6 +2,7 @@ module test1;
 
 import std.stdio;
 import std.format;
+import std.math;
 
 import dlib;
 import dgl;
@@ -29,10 +30,18 @@ class TestApp: Application
     Font font;
     TextLine fpsText;
     
+    DynamicArray!PhysicsEntity entities;
+    PhysicsEntity selectedEntity;
+    
+    float aspectRatio;
+    float fovY = 60;
+    float maxPickDistance = 1000.0f;
+    float dragDistance;
+    
     this()
     {
         super(800, 600, "dmech test");
-        clearColor = Color4f(0.5f, 0.5f, 0.5f);
+        clearColor = Color4f(0.2f, 0.2f, 0.2f);
         
         camera = New!TrackballCamera();
         camera.pitch(45.0f);
@@ -53,13 +62,42 @@ class TestApp: Application
         gBox = New!GeomBox(Vector3f(1, 1, 1)); // Physical shape
         sBox = New!ShapeBox(Vector3f(1, 1, 1)); // Graphical shape
         
-        foreach(i; 0..10)
-            addBoxEntity(Vector3f(-10 + i, 2 + i * 2.1, 0));
+        buildPyramid(7);
             
         font = New!FreeTypeFont("data/fonts/droid/DroidSans.ttf", 18);
         
         fpsText = New!TextLine(font, "FPS: 0", Vector2f(8, 8));
         fpsText.color = Color4f(1, 1, 1);
+    }
+    
+    void buildPyramid(uint pyramidSize)
+    {
+        float size = 1.0f;
+
+        float cubeHeight = 2.0f;
+
+        float width = size * 2.0f;
+        float height = cubeHeight;
+        float horizontal_spacing = 0.1f;
+        float veritcal_spacing = 0.1f;
+
+        foreach(i; 0..pyramidSize)
+        foreach(e; i..pyramidSize)
+        {
+            auto position = Vector3f(
+                (e - i * 0.5f) * (width + horizontal_spacing) - ((width + horizontal_spacing) * 5), 
+                6.0f + (height + veritcal_spacing * 0.5f) + i * height + 0.26f,
+                0.0f);
+
+            PhysicsEntity entity = addBoxEntity(position);
+/*
+            Material mat = new Material();
+            auto col = Color4f((randomUnitVector3!float + 0.5f).normalized);
+            mat.ambientColor = col;
+            mat.diffuseColor = col;
+            entity.material = mat;
+*/
+        }
     }
     
     PhysicsEntity addBoxEntity(Vector3f pos)
@@ -68,6 +106,7 @@ class TestApp: Application
         auto scBox = world.addShapeComponent(bBox, gBox, Vector3f(0, 0, 0), 1.0f);
         PhysicsEntity peBox = New!PhysicsEntity(sBox, bBox);
         addDrawable(peBox);
+        entities.append(peBox);
         return peBox;
     }
     
@@ -82,6 +121,7 @@ class TestApp: Application
         foreach(d; drawables.data)
             d.free();
         drawables.free();
+        entities.free();
         axes.free();
         grid.free();
         world.free();
@@ -104,7 +144,14 @@ class TestApp: Application
     
     override void onMouseButtonDown(int button)
     {
-        if (button == SDL_BUTTON_MIDDLE)
+        if (button == SDL_BUTTON_LEFT)
+        {
+            Ray mray = mouseRay();
+            selectedEntity = pickEntity(mray);
+            if (selectedEntity)
+                dragDistance = distance(selectedEntity.rbody.position, camera.getPosition);
+        }
+        else if (button == SDL_BUTTON_MIDDLE)
         {
             prevMouseX = eventManager.mouseX;
             prevMouseY = eventManager.mouseY;
@@ -117,6 +164,28 @@ class TestApp: Application
         {
             camera.zoom(-1.0f);
         }
+    }
+    
+    PhysicsEntity pickEntity(Ray r)
+    {
+        PhysicsEntity res = null;
+
+        float min_t = float.max;
+        foreach(e; entities.data)
+        {
+            AABB aabb = e.getAABB();
+            float t;
+            if (aabb.intersectsSegment(r.p0, r.p1, t))
+            {
+                if (t < min_t)
+                {
+                    min_t = t;
+                    res = e;
+                }
+            }
+        }
+        
+        return res;
     }
     
     override void free()
@@ -139,6 +208,12 @@ class TestApp: Application
     
         updateCamera();
         
+        if (eventManager.mouseButtonPressed[SDL_BUTTON_LEFT] && selectedEntity)
+        {
+            Vector3f dragPosition = cameraMousePoint(dragDistance);
+            selectedEntity.rbody.position = dragPosition;
+        }
+        
         fpsText.setText(format("FPS: %s", eventManager.fps));
     }
     
@@ -146,11 +221,11 @@ class TestApp: Application
     {       
         double dt = eventManager.deltaTime;
         
-        float aspectRatio = cast(float)eventManager.windowWidth / cast(float)eventManager.windowHeight;
+        aspectRatio = cast(float)eventManager.windowWidth / cast(float)eventManager.windowHeight;
         
         glMatrixMode(GL_PROJECTION);
         glLoadIdentity();
-        gluPerspective(60.0f, aspectRatio, 0.1, 1000.0);
+        gluPerspective(fovY, aspectRatio, 0.1, 1000.0);
         glMatrixMode(GL_MODELVIEW);
         
         glLoadIdentity();
@@ -168,6 +243,8 @@ class TestApp: Application
         
         foreach(d; drawables.data)
             d.draw(dt);
+        if (selectedEntity)
+            drawWireframe(selectedEntity, dt);
             
         glDisable(GL_LIGHTING);
         
@@ -207,6 +284,72 @@ class TestApp: Application
 
         prevMouseX = eventManager.mouseX;
         prevMouseY = eventManager.mouseY;
+    }
+    
+    void drawWireframe(Drawable drw, double dt)
+    {
+        glDisable(GL_DEPTH_TEST);
+        glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
+        glDisable(GL_LIGHTING);
+        glColor4f(1.0f, 0.5f, 0.0f, 1.0f);
+        drw.draw(dt);
+        glColor4f(1.0f, 1.0f, 1.0f, 1.0f);
+        glEnable(GL_LIGHTING);
+        glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
+        glEnable(GL_DEPTH_TEST);
+    }
+    
+    Vector3f cameraPoint(float x, float y, float dist)
+    {        
+        return camera.getPosition() + cameraDir(x, y) * dist;
+    }
+        
+    Vector3f cameraMousePoint(float dist)
+    {
+        return cameraPoint(eventManager.mouseX, eventManager.windowHeight - eventManager.mouseY, dist);
+    }
+    
+    Vector3f cameraDir(float x, float y)
+    {
+        Vector3f camDir = -camera.getDirectionVector();
+
+        float fovX = fovXfromY(fovY, aspectRatio);
+
+        float tfov1 = tan(fovY*PI/360.0f);
+        float tfov2 = tan(fovX*PI/360.0f);
+        
+        Vector3f camUp = camera.getUpVector() * tfov1;
+        Vector3f camRight = -camera.getRightVector() * tfov2;
+
+        float width  = 1.0f - 2.0f * x / eventManager.windowWidth;
+        float height = 1.0f - 2.0f * y / eventManager.windowHeight;
+        
+        Vector3f m = camDir + camUp * height + camRight * width;
+        Vector3f dir = m.normalized;
+        
+        return dir;
+    }
+    
+    Ray cameraRay(float x, float y)
+    {
+        Vector3f camPos = camera.getPosition();
+        Ray r = Ray(camPos, camPos + cameraDir(x, y) * maxPickDistance);
+        return r;
+    }
+    
+    Vector3f mouseDir()
+    {
+        return cameraDir(eventManager.mouseX, eventManager.windowHeight - eventManager.mouseY);
+    }
+    
+    Ray mouseRay()
+    {
+        return cameraRay(eventManager.mouseX, eventManager.windowHeight - eventManager.mouseY);
+    }
+    
+    Ray mouseRay(float x, float y)
+    {
+        return cameraRay(x, eventManager.windowHeight - y);
     }
 }
 
