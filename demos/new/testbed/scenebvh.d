@@ -1,8 +1,12 @@
-module scenebvh;
+module testbed.scenebvh;
 
-import dlib;
-import dgl;
-import dmech;
+import dlib.core.memory;
+import dlib.container.array;
+import dlib.math.matrix;
+import dlib.geometry.triangle;
+import dgl.graphics.scene;
+import dgl.graphics.mesh;
+import dmech.bvh;
 
 // TODO: This function is total hack,
 // need to rewrite BVH module to handle Triangle ranges,

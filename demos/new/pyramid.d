@@ -1,19 +1,44 @@
-module test1;
+module pyramid;
 
 import std.stdio;
 import std.format;
 import std.math;
 
-import dlib;
-import dgl;
-import dmech;
+import dlib.core.memory;
+import dlib.container.array;
+import dlib.math.vector;
+import dlib.math.utils;
+import dlib.image.color;
+import dlib.geometry.ray;
+import dlib.geometry.aabb;
 
-import grid;
-import physicsentity;
+import derelict.opengl.gl;
+import derelict.opengl.glu;
+import derelict.sdl.sdl;
+
+import dgl.core.application;
+import dgl.core.interfaces;
+import dgl.core.event;
+import dgl.graphics.shapes;
+import dgl.graphics.material;
+import dgl.graphics.tbcamera;
+import dgl.graphics.axes;
+import dgl.ui.font;
+import dgl.ui.ftfont;
+import dgl.ui.textline;
+
+import dmech.world;
+import dmech.geometry;
+import dmech.rigidbody;
+import dmech.shape;
+
+import testbed.grid;
+import testbed.physicsentity;
 
 class TestApp: Application
 {
     TrackballCamera camera;
+    DynamicArray!Material materials;
     DynamicArray!Drawable drawables;
     Vector4f lightPosition;
     
@@ -90,13 +115,12 @@ class TestApp: Application
                 0.0f);
 
             PhysicsEntity entity = addBoxEntity(position);
-/*
-            Material mat = new Material();
+            Material mat = New!Material();
             auto col = Color4f((randomUnitVector3!float + 0.5f).normalized);
             mat.ambientColor = col;
             mat.diffuseColor = col;
             entity.material = mat;
-*/
+            materials.append(mat);
         }
     }
     
@@ -118,6 +142,9 @@ class TestApp: Application
     ~this()
     {
         camera.free();
+        foreach(m; materials.data)
+            m.free();
+        materials.free();
         foreach(d; drawables.data)
             d.free();
         drawables.free();
@@ -244,8 +271,11 @@ class TestApp: Application
         foreach(d; drawables.data)
             d.draw(dt);
         if (selectedEntity)
+        {
+            selectedEntity.useMaterial = false;
             drawWireframe(selectedEntity, dt);
-            
+            selectedEntity.useMaterial = true;
+        }
         glDisable(GL_LIGHTING);
         
         camera.unbind();
@@ -291,9 +321,8 @@ class TestApp: Application
         glDisable(GL_DEPTH_TEST);
         glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
         glDisable(GL_LIGHTING);
-        glColor4f(1.0f, 0.5f, 0.0f, 1.0f);
-        drw.draw(dt);
         glColor4f(1.0f, 1.0f, 1.0f, 1.0f);
+        drw.draw(dt);
         glEnable(GL_LIGHTING);
         glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
         glEnable(GL_DEPTH_TEST);

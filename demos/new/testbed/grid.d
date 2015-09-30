@@ -1,7 +1,9 @@
-module grid;
+module testbed.grid;
 
-import dlib;
-import dgl;
+import dlib.core.memory;
+import dlib.image.color;
+import derelict.opengl.gl;
+import dgl.core.interfaces;
 
 class Grid: Drawable
 {

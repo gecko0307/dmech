@@ -1,14 +1,34 @@
-module test1;
+module simple;
 
 import std.stdio;
 import std.format;
 
-import dlib;
-import dgl;
-import dmech;
+import dlib.core.memory;
+import dlib.container.array;
+import dlib.math.vector;
+import dlib.image.color;
 
-import grid;
-import physicsentity;
+import derelict.opengl.gl;
+import derelict.opengl.glu;
+import derelict.sdl.sdl;
+
+import dgl.core.application;
+import dgl.core.interfaces;
+import dgl.core.event;
+import dgl.graphics.shapes;
+import dgl.graphics.tbcamera;
+import dgl.graphics.axes;
+import dgl.ui.font;
+import dgl.ui.ftfont;
+import dgl.ui.textline;
+
+import dmech.world;
+import dmech.geometry;
+import dmech.rigidbody;
+import dmech.shape;
+
+import testbed.grid;
+import testbed.physicsentity;
 
 class TestApp: Application
 {

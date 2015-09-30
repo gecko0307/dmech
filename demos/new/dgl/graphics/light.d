@@ -96,8 +96,8 @@ Light pointLight(
     Color4f diffuseColor,
     Color4f ambientColor,
     float constantAttenuation = 1.0f,
-    float linearAttenuation = 0.1f,
-    float quadraticAttenuation = 0.0f)
+    float linearAttenuation = 0.0f,
+    float quadraticAttenuation = 0.2f)
 {
     return New!Light(
         Vector4f(pos.x, pos.y, pos.z, 1.0f),

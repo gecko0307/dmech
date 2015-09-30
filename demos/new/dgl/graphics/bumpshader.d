@@ -38,6 +38,7 @@ import dgl.graphics.glslshader;
 private string _bumpVertexShader = q{
     varying vec3 position;
     varying vec3 n, t, b;
+    varying vec3 eyeVec;
 		
     void main(void)
     {
@@ -49,6 +50,12 @@ private string _bumpVertexShader = q{
         b = cross(n, t);
 	    vec4 pos = gl_ModelViewMatrix * gl_Vertex;
 	    position = pos.xyz;
+        
+        eyeVec.x = dot(position, t);
+        eyeVec.y = dot(position, b);
+        eyeVec.z = dot(position, n);
+        eyeVec = -normalize(eyeVec);
+        
 	    gl_Position = ftransform();
     }
 };
@@ -57,40 +64,50 @@ private string _bumpFragmentShader = q{
 
     varying vec3 position;
     varying vec3 n, t, b;
+    varying vec3 eyeVec;
 		
     uniform sampler2D dgl_Texture0;
     uniform sampler2D dgl_Texture1;
     uniform sampler2D dgl_Texture2;
+    
+    uniform bool parallaxEnabled;
+    const float scale = 0.05;
+    const float bias = -0.03;
 
     void main (void) 
-    { 
-        vec3 normal = 2.0 * texture2D(dgl_Texture1, gl_TexCoord[0].st).rgb - 1.0;
+    {
+        vec2 texCoords = gl_TexCoord[0].st;
+        if (parallaxEnabled)
+        {
+            vec2 E = vec2(eyeVec.x, -eyeVec.y);
+            float height = texture2D(dgl_Texture1, texCoords).a; 
+            height = height * scale + bias;
+            texCoords = texCoords + (height * E);
+        }
+        
+        vec3 normal = 2.0 * texture2D(dgl_Texture1, texCoords).rgb - 1.0;
         normal = normalize(normal);
 	
-        vec3 V_tan;
-        V_tan.x = dot(position, t);
-        V_tan.y = dot(position, b);
-        V_tan.z = dot(position, n);
-        V_tan = -normalize(V_tan);
-	
-	    float Csh = 64.0; //gl_FrontMaterial.shininess;
+	    float Csh = 32.0;
 
         vec3 lightDirection;
         float attenuation; 
         vec3 L_tan;
         const float lightRadiusSqr = 20.0;
 
-        vec4 tex = texture2D(dgl_Texture0, gl_TexCoord[0].st);
+        vec4 tex = texture2D(dgl_Texture0, texCoords);
         vec4 emit = vec4(0.0, 0.0, 0.0, 1.0);
         if (gl_FrontMaterial.emission.w > 0.0)
-            emit = texture2D(dgl_Texture2, gl_TexCoord[0].st) * gl_FrontMaterial.emission.w;
+            emit = texture2D(dgl_Texture2, texCoords) * gl_FrontMaterial.emission.w;
             
         vec4 col = vec4(0.0, 0.0, 0.0, 1.0);
-    
+
         vec3 halfVector;
         float distance;
         float diffuse;
         float specular;
+        
+        const float roughness = 0.9;
 
         for (int i = 0; i < 4; i++)
 	    {
@@ -107,18 +124,19 @@ private string _bumpFragmentShader = q{
                 lightDirection = normalize(positionToLightSource);
             
                 attenuation = clamp(1.0 - distance/lightRadiusSqr, 0.0, 1.0);
-   
+
                 L_tan.x = dot(lightDirection, t);
                 L_tan.y = dot(lightDirection, b);
                 L_tan.z = dot(lightDirection, n);
-                L_tan = normalize(L_tan);
 
-	            diffuse = attenuation * max(dot(L_tan, normal), 0.0);
-	            vec3 R = -reflect(normal, L_tan); 
-	            specular = pow(max(dot(L_tan, normal), 0.0), Csh);
-                specular = attenuation * clamp(specular, 0.0, 1.0); 
+	            diffuse = clamp(dot(normal, L_tan), 0.0, 1.0);
                 
-	            col += Ca + (Cd*diffuse) + (Cs*specular*2); 
+                // Blinn-Phong
+                halfVector = normalize(L_tan + eyeVec);
+			    float NDotH = dot(normal, halfVector);
+			    specular = max(pow(NDotH, Csh), 0.0);
+                
+	            col += (Ca + (Cd*diffuse) + (Cs*specular)) * attenuation; 
 	        }
 	    }
 
@@ -127,7 +145,9 @@ private string _bumpFragmentShader = q{
     }
 };
 
-Shader bumpShader(EventManager emgr)
+GLSLShader bumpShader(EventManager emgr)
 {
-    return New!GLSLShader(emgr, _bumpVertexShader, _bumpFragmentShader);
+    auto shader = New!GLSLShader(emgr, _bumpVertexShader, _bumpFragmentShader);
+    shader.setParamBool("parallaxEnabled", false);
+    return shader;
 }

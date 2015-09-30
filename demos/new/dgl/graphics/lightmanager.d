@@ -86,7 +86,10 @@ class LightManager: Modifier3D, Drawable
         {
             Vector3f d = (light.position.xyz - objPos);
             float quadraticAttenuation = d.lengthsqr;
-            light.brightness = 1.0f / quadraticAttenuation;
+            //if (quadraticAttenuation > 100.0f)
+            //    light.brightness = 0.0f;
+            //else
+                light.brightness = 1.0f / quadraticAttenuation;
         }
     }
 

@@ -142,7 +142,7 @@ void calcTriangleData(Triangle* tri, DGLTriangle* dglTri)
 }
 
 void loadDGL2(InputStream istrm, Scene scene)
-{
+{   
     assert(scene !is null);
 
     DataChunk readChunk()
@@ -300,6 +300,8 @@ void decodeMaterial(Material m, InputStream istrm, Scene scene)
             }
         }
     }
+    
+    dml.free();
 }
 
 

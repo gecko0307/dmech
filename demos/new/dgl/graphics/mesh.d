@@ -202,8 +202,8 @@ class Mesh: Drawable
             tangents[i].normalize();
 
             // Calculate handedness
-            if (dot(cross(n, t), tTan[i]) < 0.0f)
-	        tangents[i] = -tangents[i];
+            //if (dot(cross(n, t), tTan[i]) < 0.0f)
+	        //    tangents[i] = -tangents[i];
         }
 
         foreach(ti, ref tri; tris)
