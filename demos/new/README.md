@@ -13,11 +13,15 @@ For 3D rendering, [DGL](http://github.com/gecko0307/dgl) is used. Because DGL is
 Building with DUB
 -----------------
 dub build --config=simple
+
 dub build --config=pyramid
+
 dub build --config=game
 
 Building with Cook
 ------------------
 cook --rsp simple
+
 cook --rsp pyramid
+
 cook --rsp game
