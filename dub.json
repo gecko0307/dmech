@@ -12,7 +12,7 @@
     ],
 
     "dependencies": {
-        "dlib": ">=0.5.2"
+        "dlib": ">=0.6.0"
     },
 
     "buildRequirements": [
