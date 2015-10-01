@@ -382,7 +382,7 @@ extern (C)
             CFURLRef url2 = CFURLCreateCopyDeletingLastPathComponent(null, url);
 
             if (CFURLGetFileSystemRepresentation(url2, true, cast(ubyte*) parentdir, MAXPATHLEN))
-                assert (chdir(parentdir.ptr) == 0);   /* chdir to the binary app's parent */
+                assert (chdir(parentdir) == 0);   /* chdir to the binary app's parent */
 
             CFRelease(url);
             CFRelease(url2);
