@@ -89,7 +89,7 @@ final class TrackballCamera: Modifier
         rotPitch = rotation(Vector3f(1.0f,0.0f,0.0f), 0.0f);
         rotTurn = rotation(Vector3f(0.0f,1.0f,0.0f), 0.0f);
         rotRoll = rotation(Vector3f(0.0f,0.0f,1.0f), 0.0f);
-        transform.identity();
+        transform = Matrix4x4f.identity;
         distance = 10.0f;
         
         current_translate = Vector3f(0.0f, 0.0f, 0.0f);

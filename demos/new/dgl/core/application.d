@@ -172,19 +172,22 @@ class Application: EventListener
 // between system libraries and local ones
 void loadLibraries()
 {
+    DerelictGL.load();
+    DerelictGLU.load();
+
     version(Windows)
     {
-        enum sharedLibSDL = "lib/SDL.dll";
-        enum sharedLibFT = "lib/freetype.dll";
+        DerelictSDL.load("lib/SDL.dll");
+        DerelictFT.load("lib/freetype.dll");
     }
     version(linux)
     {
-        enum sharedLibSDL = "./lib/libsdl.so";
-        enum sharedLibFT = "./lib/libfreetype.so";
+        DerelictSDL.load("./lib/libsdl.so");
+        DerelictFT.load("./lib/libfreetype.so");
     }
-
-    DerelictGL.load();
-    DerelictGLU.load();
-    DerelictSDL.load(sharedLibSDL);
-    DerelictFT.load(sharedLibFT);
+    version(OSX)
+    {
+        DerelictSDL.load();
+        DerelictFT.load();
+    }
 }

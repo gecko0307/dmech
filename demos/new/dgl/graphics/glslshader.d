@@ -67,11 +67,11 @@ class GLSLShader: Shader
             int len;
             char* srcptr;
 
-            len = vertexProgram.length;
+            len = cast(int)vertexProgram.length;
             srcptr = cast(char*)vertexProgram.ptr;
             glShaderSourceARB(shaderVert, 1, &srcptr, &len);
 
-            len = fragmentProgram.length;
+            len = cast(int)fragmentProgram.length;
             srcptr = cast(char*)fragmentProgram.ptr;
             glShaderSourceARB(shaderFrag, 1, &srcptr, &len);
 

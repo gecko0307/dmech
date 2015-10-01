@@ -10,7 +10,7 @@
         "."
     ],
     "dependencies": {
-        "dlib": ">=0.6.0",
+        "dlib": "~master",
         "dmech": ">=0.2.5"
     },
     "buildRequirements":[

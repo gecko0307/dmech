@@ -113,7 +113,7 @@ class Material: Modifier
         {
             if (tex !is null)
             {
-                glActiveTextureARB(GL_TEXTURE0_ARB + i);
+                glActiveTextureARB(GL_TEXTURE0_ARB + cast(uint)i);
                 tex.bind(dt);
             }
         }
@@ -132,7 +132,7 @@ class Material: Modifier
         {
             if (tex !is null)
             {
-                glActiveTextureARB(GL_TEXTURE0_ARB + i);
+                glActiveTextureARB(GL_TEXTURE0_ARB + cast(uint)i);
                 tex.unbind();
             }
         }

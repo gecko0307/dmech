@@ -74,7 +74,7 @@ int hasVector(ref DynamicArray!Vector3f arr, Vector3f vec)
     foreach(i, v; arr.data)
     {
         if (vectorsAlmostSame(v, vec))
-            return i;
+            return cast(int)i;
     }
     return -1;
 }
@@ -119,7 +119,7 @@ class Mesh: Drawable
                     vertices.append(v);
                     normals.append(n);
                     texcoords.append(t);
-                    triangle[i] = vertices.length-1;
+                    triangle[i] = cast(uint)(vertices.length-1);
                 }
                 else
                 {
