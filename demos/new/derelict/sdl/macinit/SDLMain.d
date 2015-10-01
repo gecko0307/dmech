@@ -27,7 +27,7 @@ private
         import std.c.linux.linux;
         import std.c.stdlib;
         import std.c.string;
-        
+        import std.file;
         static import std.string;
     }
 
