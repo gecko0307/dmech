@@ -35,4 +35,4 @@ addons:
      - gcc-multilib
 
 script:
- - dub test --arch=$ARCH
+ - dub build --arch=$ARCH
