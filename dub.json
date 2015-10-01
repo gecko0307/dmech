@@ -17,5 +17,13 @@
 
     "buildRequirements": [
         "allowWarnings"
+    ],
+
+    "configurations": [
+        {
+            "name": "library",
+            "targetType": "library",
+            "sourcePaths": ["dmech"]
+        }
     ]
 }

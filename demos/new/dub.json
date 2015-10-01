@@ -16,6 +16,7 @@
     "buildRequirements":[
         "allowWarnings"
     ],
+    "libs-posix": ["dl"],
     "configurations": [
         {
             "name": "simple",
