@@ -1,3 +1,4 @@
+[![Build Status](https://travis-ci.org/gecko0307/dmech.svg?branch=master)](https://travis-ci.org/gecko0307/dmech)
 dmech
 =====
 dmech stands for "D mechanics": it is a real-time 3D physics engine written in D language, capable of simulating rigid body dynamics. It is more suitable for computer games than scientific simulations: the goal is to convince a player, rather than giving accurate results. dmech is GC-free and fully platform-independent, it can be used with any API or graphics engine. Currently dmech is in early stages of development and not considered for production use.
