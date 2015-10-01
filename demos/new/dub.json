@@ -11,7 +11,7 @@
     ],
     "dependencies": {
         "dlib": "~master",
-        "dmech": ">=0.2.5"
+        "dmech": "~master"
     },
     "buildRequirements":[
         "allowWarnings"
