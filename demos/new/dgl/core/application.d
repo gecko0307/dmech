@@ -85,7 +85,7 @@ class Application: EventListener
         SDL_ShowCursor(showCursor);
 
         DerelictGL.loadClassicVersions(GLVersion.GL12);
-        DerelictGL.loadExtensions();
+        DerelictGL.loadBaseExtensions();
 
         clearColor = Color4f(0, 0, 0);
 

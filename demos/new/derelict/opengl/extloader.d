@@ -107,6 +107,11 @@ package
         extLoadPlatform();
     }
 
+    void extLoadMinimal()
+    {
+        loaded["GL_ARB_multitexture"] = load_GL_ARB_multitexture();
+    }
+
     string[] getLoadedExtensionNames()
     {
         auto keys = loaded.keys;
