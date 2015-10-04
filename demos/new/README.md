@@ -8,7 +8,7 @@ Three demos are available:
 
 Graphics Engine
 ---------------
-For 3D rendering, [DGL](http://github.com/gecko0307/dgl) is used. Because DGL is currently under active development and often breaks backward compatibility, the latest version is included here.
+For 3D rendering, [DGL](http://github.com/gecko0307/dgl) is used. Because DGL is currently under active development and often breaks backward compatibility, the latest compatible version is included here.
 
 Building with DUB
 -----------------
