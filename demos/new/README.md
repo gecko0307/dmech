@@ -18,7 +18,7 @@ dub build --config=pyramid
 
 dub build --config=game
 
-It is recommended to do a fresh build (e.g., without temporary files created by DUB) for every configuration due to possible linking problems.
+Note: it is recommended to do a fresh build (e.g., without temporary files created by DUB) for every configuration due to possible linking problems.
 
 Building with Cook
 ------------------
