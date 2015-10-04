@@ -19,21 +19,21 @@
     "libs-posix": ["dl"],
     "configurations": [
         {
-            "name": "simple",
-            "targetName": "simple",
-            "targetType": "executable",
-            "sourcePaths": ["."],
-            "mainSourceFile": "simple.d",
-            "excludedSourceFiles": ["pyramid.d", "game.d"],
-            "buildOptions": ["noBoundsCheck", "optimize"]
-        },
-        {
             "name": "pyramid",
             "targetName": "pyramid",
             "targetType": "executable",
             "sourcePaths": ["."],
             "mainSourceFile": "pyramid.d",
             "excludedSourceFiles": ["simple.d", "game.d"],
+            "buildOptions": ["noBoundsCheck", "optimize"]
+        },
+        {
+            "name": "simple",
+            "targetName": "simple",
+            "targetType": "executable",
+            "sourcePaths": ["."],
+            "mainSourceFile": "simple.d",
+            "excludedSourceFiles": ["pyramid.d", "game.d"],
             "buildOptions": ["noBoundsCheck", "optimize"]
         },
         {
