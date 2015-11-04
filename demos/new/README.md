@@ -8,7 +8,7 @@ Three demos are available:
 
 Graphics Engine
 ---------------
-For 3D rendering, [DGL](http://github.com/gecko0307/dgl) is used. Because DGL is currently under active development and often breaks backward compatibility, the latest version is included here.
+For 3D rendering, [DGL](http://github.com/gecko0307/dgl) is used. Because DGL is currently under active development and often breaks backward compatibility, the latest compatible version is included here.
 
 Building with DUB
 -----------------
@@ -17,6 +17,8 @@ dub build --config=simple
 dub build --config=pyramid
 
 dub build --config=game
+
+Note: it is recommended to do a fresh build (e.g., without temporary files created by DUB) for every configuration due to possible linking problems.
 
 Building with Cook
 ------------------
