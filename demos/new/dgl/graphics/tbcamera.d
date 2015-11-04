@@ -41,8 +41,9 @@ import dlib.math.affine;
 import dlib.math.quaternion;
 
 import dgl.core.interfaces;
+import dgl.graphics.camera;
 
-final class TrackballCamera: Modifier
+final class TrackballCamera: Modifier, Camera
 {
     private:
 
@@ -86,9 +87,9 @@ final class TrackballCamera: Modifier
     this()
     {
         center = Vector3f(0.0f, 0.0f, 0.0f);
-        rotPitch = rotation(Vector3f(1.0f,0.0f,0.0f), 0.0f);
-        rotTurn = rotation(Vector3f(0.0f,1.0f,0.0f), 0.0f);
-        rotRoll = rotation(Vector3f(0.0f,0.0f,1.0f), 0.0f);
+        rotPitch = rotationQuaternion(Vector3f(1.0f,0.0f,0.0f), 0.0f);
+        rotTurn = rotationQuaternion(Vector3f(0.0f,1.0f,0.0f), 0.0f);
+        rotRoll = rotationQuaternion(Vector3f(0.0f,0.0f,1.0f), 0.0f);
         transform = Matrix4x4f.identity;
         distance = 10.0f;
         
@@ -115,13 +116,13 @@ final class TrackballCamera: Modifier
 
 	    glPushMatrix();
 
-        rotPitch = rotation(Vector3f(1.0f,0.0f,0.0f), degtorad(rotPitchTheta));
-        rotTurn = rotation(Vector3f(0.0f,1.0f,0.0f), degtorad(rotTurnTheta));
-        rotRoll = rotation(Vector3f(0.0f,0.0f,1.0f), degtorad(rotRollTheta));
+        rotPitch = rotationQuaternion(Vector3f(1.0f,0.0f,0.0f), degtorad(rotPitchTheta));
+        rotTurn = rotationQuaternion(Vector3f(0.0f,1.0f,0.0f), degtorad(rotTurnTheta));
+        rotRoll = rotationQuaternion(Vector3f(0.0f,0.0f,1.0f), degtorad(rotRollTheta));
 
         Quaternionf q = rotPitch * rotTurn * rotRoll;
-        Matrix4x4f rotationMatrix = q.toMatrix4x4();
-        transform = translationMatrix(Vector3f(0.0f, 0.0f, -distance)) * rotationMatrix * translationMatrix(center);
+        Matrix4x4f rot = q.toMatrix4x4();
+        transform = translationMatrix(Vector3f(0.0f, 0.0f, -distance)) * rot * translationMatrix(center);
         glLoadMatrixf(transform.arrayof.ptr);
 
         transform.invert();
