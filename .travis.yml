@@ -9,8 +9,8 @@ language: d
 before_script: cd demos/new
 
 d:
- - dmd-2.068.2
- - dmd-2.067.1
+ - dmd-2.076.0
+ - ldc-1.4.0
 
 env: 
   matrix:
