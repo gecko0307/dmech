@@ -347,7 +347,7 @@ class SDLMain : NSObject
         return cast(Class) objc_getClass!(this.stringof);
     }
 
-    SDLMain init ()
+    override SDLMain init ()
     {
         id result = objc_msgSend(this.id_, sel_init);
         return result ? this : null;

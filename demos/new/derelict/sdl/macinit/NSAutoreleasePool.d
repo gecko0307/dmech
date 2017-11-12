@@ -63,7 +63,7 @@ class NSAutoreleasePool : NSObject
         return cast(Class) objc_getClass!(this.stringof);
     }
 
-    NSAutoreleasePool init ()
+    override NSAutoreleasePool init ()
     {
         id result = objc_msgSend(this.id_, sel_init);
         return result ? this : null;
