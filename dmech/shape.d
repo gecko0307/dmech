@@ -1,5 +1,5 @@
 /*
-Copyright (c) 2014-2015 Timur Gafarov
+Copyright (c) 2014-2017 Timur Gafarov
 
 Boost Software License - Version 1.0 - August 17th, 2003
 
@@ -31,7 +31,7 @@ module dmech.shape;
 import dlib.core.memory;
 import dlib.math.vector;
 import dlib.math.matrix;
-import dlib.math.affine;
+import dlib.math.transformation;
 import dlib.geometry.aabb;
 import dlib.geometry.sphere;
 
@@ -53,8 +53,6 @@ class ShapeComponent: Freeable
     uint id = 0;       // global identifier
 
     Matrix4x4f _transformation;
-
-    //alias geometry this;
 
     bool locked = false;
 

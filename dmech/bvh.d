@@ -1,5 +1,5 @@
 /*
-Copyright (c) 2011-2014 Timur Gafarov 
+Copyright (c) 2011-2017 Timur Gafarov 
 
 Boost Software License - Version 1.0 - August 17th, 2003
 
@@ -298,9 +298,10 @@ class BVHTree(T)
 
     this(DynamicArray!T objects, 
          uint maxObjectsPerNode = 8,
+         uint maxRecursionDepth = 10,
          Heuristic splitHeuristic = Heuristic.SAH)
     {
-        root = construct(objects, maxObjectsPerNode, splitHeuristic);
+        root = construct(objects, 0, maxObjectsPerNode, maxRecursionDepth, splitHeuristic);
     }
     
     void free()
@@ -308,10 +309,14 @@ class BVHTree(T)
         root.free();
         Delete(this);
     }
+    
+    import std.stdio;
 
     BVHNode!T construct(
          DynamicArray!T objects, 
+         uint rec,
          uint maxObjectsPerNode,
+         uint maxRecursionDepth,
          Heuristic splitHeuristic)
     {
         BVHNode!T node = New!(BVHNode!T)(duplicate(objects));
@@ -321,8 +326,13 @@ class BVHTree(T)
             return node;
         }
         
-        AABB box = enclosingAABB(node.objects.data);
+        if (rec == maxRecursionDepth)
+        {
+            return node;
+        }
         
+        AABB box = enclosingAABB(node.objects.data);
+
         SplitPlane sp;
         if (splitHeuristic == Heuristic.HMA)
             sp = getHalfMainAxisSplitPlane(node.objects.data, box);
@@ -330,12 +340,12 @@ class BVHTree(T)
             sp = getSAHSplitPlane(node.objects.data, box);
         else
             assert(0, "BVH: unsupported split heuristic");
-            
+
         auto boxes = boxSplitWithPlane(box, sp);
 
         DynamicArray!T leftObjects;
         DynamicArray!T rightObjects;
-    
+        
         foreach(obj; node.objects.data)
         {
             if (boxes[0].intersectsAABB(obj.boundingBox))
@@ -343,20 +353,20 @@ class BVHTree(T)
             else if (boxes[1].intersectsAABB(obj.boundingBox))
                 rightObjects.append(obj);
         }
-        
+
         if (leftObjects.data.length > 0 || rightObjects.data.length > 0)
             node.objects.free();
 
         if (leftObjects.data.length > 0)
-            node.child[0] = construct(leftObjects, maxObjectsPerNode, splitHeuristic);
+            node.child[0] = construct(leftObjects, rec + 1, maxObjectsPerNode, maxRecursionDepth, splitHeuristic);
         else
             node.child[0] = null;
-    
+
         if (rightObjects.data.length > 0)
-            node.child[1] = construct(rightObjects, maxObjectsPerNode, splitHeuristic);
+            node.child[1] = construct(rightObjects, rec + 1, maxObjectsPerNode, maxRecursionDepth, splitHeuristic);
         else
             node.child[1] = null;
-            
+
         leftObjects.free();
         rightObjects.free();
 

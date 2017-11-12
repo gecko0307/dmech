@@ -1,5 +1,5 @@
 /*
-Copyright (c) 2013-2015 Timur Gafarov
+Copyright (c) 2013-2017 Timur Gafarov
 
 Boost Software License - Version 1.0 - August 17th, 2003
 
@@ -33,7 +33,7 @@ import std.math;
 import dlib.core.memory;
 import dlib.math.vector;
 import dlib.math.matrix;
-import dlib.math.affine;
+import dlib.math.transformation;
 import dlib.math.utils;
 import dlib.geometry.aabb;
 
@@ -45,7 +45,8 @@ enum GeomType
     Cylinder,
     Cone,
     Ellipsoid,
-    Triangle
+    Triangle,
+    UserDefined
 }
 
 abstract class Geometry: Freeable
@@ -105,9 +106,8 @@ class GeomSphere: Geometry
     }
 
     void free()
-	  {
-		    Delete(this);
-	  }
+    {
+        Delete(this);    }
 }
 
 class GeomBox: Geometry
@@ -152,9 +152,8 @@ class GeomBox: Geometry
     }
 
     void free()
-	  {
-		    Delete(this);
-	  }
+    {
+        Delete(this);    }
 }
 
 class GeomCylinder: Geometry
@@ -211,9 +210,8 @@ class GeomCylinder: Geometry
     }
 
     void free()
-	  {
-		    Delete(this);
-	  }
+    {
+        Delete(this);    }
 }
 
 class GeomCone: Geometry
@@ -271,9 +269,8 @@ class GeomCone: Geometry
     }
 
     void free()
-	  {
-		    Delete(this);
-	  }
+    {
+        Delete(this);    }
 }
 
 class GeomEllipsoid: Geometry
@@ -311,9 +308,8 @@ class GeomEllipsoid: Geometry
     }
 
     void free()
-	  {
-		    Delete(this);
-	  }
+    {
+        Delete(this);    }
 }
 
 class GeomTriangle: Geometry
@@ -354,7 +350,6 @@ class GeomTriangle: Geometry
     // TODO: boundingBox
 
     void free()
-	  {
-		    Delete(this);
-	  }
+    {
+        Delete(this);    }
 }

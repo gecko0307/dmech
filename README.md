@@ -48,6 +48,6 @@ For real-world usage demo, check out [Atrium](http://github.com/gecko0307/atrium
 
 License
 -------
-Copyright (c) 2013-2015 Timur Gafarov.
+Copyright (c) 2013-2017 Timur Gafarov.
 Distributed under the Boost Software License, Version 1.0. (See accompanying file COPYING or at http://www.boost.org/LICENSE_1_0.txt)
 

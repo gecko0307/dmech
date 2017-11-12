@@ -1,5 +1,5 @@
 /*
-Copyright (c) 2013-2014 Timur Gafarov 
+Copyright (c) 2013-2017 Timur Gafarov 
 
 Boost Software License - Version 1.0 - August 17th, 2003
 
@@ -91,7 +91,7 @@ void solveContact(Contact* c, double dt)
     float damping = 0.9f;
     float C = max(0, -bounce * c.initialVelocityProjection - damping);
 
-    float bias = 0.0f;
+    float bias = 0.01f;
 
     // Velocity-based position correction
   /*

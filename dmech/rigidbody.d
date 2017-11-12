@@ -1,5 +1,5 @@
 /*
-Copyright (c) 2013-2015 Timur Gafarov
+Copyright (c) 2013-2017 Timur Gafarov
 
 Boost Software License - Version 1.0 - August 17th, 2003
 
@@ -35,7 +35,7 @@ import dlib.container.array;
 import dlib.math.vector;
 import dlib.math.matrix;
 import dlib.math.quaternion;
-import dlib.math.affine;
+import dlib.math.transformation;
 import dlib.math.utils;
 
 import dmech.shape;
@@ -216,13 +216,13 @@ class RigidBody: Freeable
         if (speed > maxSpeed)
             linearVelocity = linearVelocity.normalized * maxSpeed;
 
-        if (speed > stopThreshold || numContacts < 3)
+        if (speed > stopThreshold /* || numContacts < 3 */)
         {
             position += linearVelocity * dt;
         }
 
         if (enableRotation)
-        if (angularVelocity.length > stopThreshold || numContacts < 3)
+        if (angularVelocity.length > 0.2f /* || numContacts < 3 */) //stopThreshold
         {
             orientation += 0.5f * Quaternionf(angularVelocity, 0.0f) * orientation * dt;
             orientation.normalize();
@@ -265,7 +265,8 @@ class RigidBody: Freeable
         if (active && dynamic)
         {
             auto rot = orientation.toMatrix3x3;
-            invInertiaTensor = (rot * inertiaTensor * rot.transposed).inverse;
+            //invInertiaTensor = (rot * inertiaTensor * rot.transposed).inverse;
+            invInertiaTensor = (rot * inertiaTensor.inverse * rot.transposed);
         }
     }
 
@@ -307,6 +308,15 @@ class RigidBody: Freeable
         linearVelocity += impulse * invMass;
         Vector3f angularImpulse = cross(point - worldCenterOfMass, impulse);
         angularVelocity += angularImpulse * invInertiaTensor;
+    }
+
+    void applyForceAtPos(Vector3f force, Vector3f pos)
+    {
+        if (!active || !dynamic)
+            return;
+
+        forceAccumulator += force;
+        torqueAccumulator += cross(pos - worldCenterOfMass, force);
     }
 
     void applyPseudoImpulse(Vector3f impulse, Vector3f point)

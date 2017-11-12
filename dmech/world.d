@@ -1,5 +1,5 @@
 /*
-Copyright (c) 2013-2015 Timur Gafarov
+Copyright (c) 2013-2017 Timur Gafarov
 
 Boost Software License - Version 1.0 - August 17th, 2003
 
@@ -35,10 +35,11 @@ import dlib.core.memory;
 import dlib.container.array;
 import dlib.math.vector;
 import dlib.math.matrix;
-import dlib.math.affine;
+import dlib.math.transformation;
 import dlib.geometry.triangle;
 import dlib.geometry.sphere;
 import dlib.geometry.ray;
+import dlib.geometry.plane;
 
 import dmech.rigidbody;
 import dmech.geometry;
@@ -54,8 +55,9 @@ import dmech.mpr;
 import dmech.raycast;
 
 /*
- * World object stores bodies and constraints and performs
- * simulation cycles on them.
+ * World object stores bodies and constraints
+ * and performs simulation cycles on them.
+ * It also provides a generalized raycast query for all bodies.
  */
 
 alias PairHashTable!PersistentContactManifold ContactCache;
@@ -76,8 +78,8 @@ class PhysicsWorld: Freeable
     bool broadphase = false;
     bool warmstart = false;
 
-    uint positionCorrectionIterations = 10;
-    uint constraintIterations = 30;
+    uint positionCorrectionIterations = 20;
+    uint constraintIterations = 40;
 
     BVHNode!Triangle bvhRoot = null;
 
@@ -88,7 +90,7 @@ class PhysicsWorld: Freeable
 
     this(size_t maxCollisions = 1000)
     {
-        gravity = Vector3f(0.0f, -9.80665f, 0.0f); // Earth -9.80665f
+        gravity = Vector3f(0.0f, -9.80665f, 0.0f); // Earth conditions
 
         manifolds = New!ContactCache(maxCollisions);
 
@@ -202,8 +204,9 @@ class PhysicsWorld: Freeable
             m.update();
         }
 
-        foreach(b; dynamicBodiesArray)
+        for (size_t i = 0; i < dynamicBodiesArray.length; i++)
         {
+            auto b = dynamicBodiesArray[i];
             b.updateInertia();
             if (b.useGravity)
             {
@@ -225,8 +228,9 @@ class PhysicsWorld: Freeable
 
         solveConstraints(dt);
 
-        foreach(b; dynamicBodiesArray)
+        for (size_t i = 0; i < dynamicBodiesArray.length; i++)
         {
+            auto b = dynamicBodiesArray[i];
             b.integrateVelocities(dt);
         }
 
@@ -238,8 +242,9 @@ class PhysicsWorld: Freeable
             solvePositionError(c, m.numContacts);
         }
 
-        foreach(b; dynamicBodiesArray)
+        for (size_t i = 0; i < dynamicBodiesArray.length; i++)
         {
+            auto b = dynamicBodiesArray[i];
             b.integratePseudoVelocities(dt);
             b.updateShapeComponents();
         }
@@ -283,7 +288,6 @@ class PhysicsWorld: Freeable
         Ray ray = Ray(rayStart, rayStart + rayDir * maxRayDist);
 
         if (bvhRoot !is null)
-        //bvhRoot.traverseByRay(ray, (ref Triangle tri)
         foreach(tri; bvhRoot.traverseByRay(&ray))
         {
             Vector3f ip;
@@ -464,11 +468,6 @@ class PhysicsWorld: Freeable
                     deepestContactIdx = i;
                     maxPen = contacts[i].penetration;
                 }
-
-                //Vector3f dirToContact = (contacts[i].point - rb.position).normalized;
-                //float groundness = dot(gravity.normalized, dirToContact);
-                //if (groundness > 0.7f)
-                //    rb.onGround = true;
             }
             
             if (deepestContactIdx >= 0)
@@ -482,9 +481,6 @@ class PhysicsWorld: Freeable
                     PersistentContactManifold m1;
                     m1.addContact(*co);
                     manifolds.set(shape.id, proxyTriShape.id, m1);
-
-                    //c.body1.contactEvent(c);
-                    //c.body2.contactEvent(c);
 
                     shape.numCollisions++;
                 }
