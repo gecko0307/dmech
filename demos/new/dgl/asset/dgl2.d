@@ -128,7 +128,7 @@ void calcTriangleData(Triangle* tri, DGLTriangle* dglTri)
                 
     tri.materialIndex = dglTri.m;
 
-    tri.normal = normal(tri.v[0], tri.v[1], tri.v[2]);
+    tri.normal = planeNormal(tri.v[0], tri.v[1], tri.v[2]);
                 
     tri.barycenter = (tri.v[0] + tri.v[1] + tri.v[2]) / 3;
 
