@@ -299,7 +299,7 @@ class SDLApplication : NSApplication
         objc_msgSend(class_SDLApplication, sel_poseAsClass, aClass);
     }
 
-    SDLApplication init ()
+    override SDLApplication init ()
     {
         id result = objc_msgSend(this.id_, sel_init);
         return result ? this : null;

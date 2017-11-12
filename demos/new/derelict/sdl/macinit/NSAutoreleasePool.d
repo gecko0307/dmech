@@ -69,7 +69,7 @@ class NSAutoreleasePool : NSObject
         return result ? this : null;
     }
 
-    void release ()
+    override void release ()
     {
         objc_msgSend(this.id_, sel_release);
     }
