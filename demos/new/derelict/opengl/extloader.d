@@ -29,6 +29,8 @@ module derelict.opengl.extloader;
 
 private
 {
+    import std.algorithm;
+ 
     import derelict.opengl.extfuncs;
     import derelict.opengl.gltypes;
     import derelict.opengl.glfuncs;
