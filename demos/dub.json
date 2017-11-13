@@ -7,10 +7,10 @@
     "homepage": "http://github.com/gecko0307/dmech",
     "name": "demo",
     "importPaths": [
-        ".", "../../source"
+        ".", "../source"
     ],
     "sourcePaths": [
-        ".", "../../source"
+        ".", "../source"
     ],
     "dependencies": {
         "dlib": "0.12.2",
