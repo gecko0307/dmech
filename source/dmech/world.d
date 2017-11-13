@@ -31,6 +31,7 @@ module dmech.world;
 import std.math;
 import std.range;
 
+import dlib.core.ownership;
 import dlib.core.memory;
 import dlib.container.array;
 import dlib.math.vector;
@@ -62,7 +63,7 @@ import dmech.raycast;
 
 alias PairHashTable!PersistentContactManifold ContactCache;
 
-class PhysicsWorld: Freeable
+class PhysicsWorld: Owner
 {
     DynamicArray!ShapeComponent shapeComponents;
     DynamicArray!RigidBody staticBodies;
@@ -88,20 +89,22 @@ class PhysicsWorld: Freeable
     ShapeComponent proxyTriShape;
     GeomTriangle proxyTriGeom;
 
-    this(size_t maxCollisions = 1000)
+    this(Owner owner, size_t maxCollisions = 1000)
     {
+        super(owner);
+
         gravity = Vector3f(0.0f, -9.80665f, 0.0f); // Earth conditions
 
-        manifolds = New!ContactCache(maxCollisions);
+        manifolds = New!ContactCache(this, maxCollisions);
 
         // Create proxy triangle
-        proxyTri = New!RigidBody();
+        proxyTri = New!RigidBody(this);
         proxyTri.position = Vector3f(0, 0, 0);
-        proxyTriGeom = New!GeomTriangle(
+        proxyTriGeom = New!GeomTriangle(this,
             Vector3f(-1.0f, 0.0f, -1.0f),
             Vector3f(+1.0f, 0.0f,  0.0f),
             Vector3f(-1.0f, 0.0f, +1.0f));
-        proxyTriShape = New!ShapeComponent(proxyTriGeom, Vector3f(0, 0, 0), 1);
+        proxyTriShape = New!ShapeComponent(this, proxyTriGeom, Vector3f(0, 0, 0), 1);
         proxyTriShape.id = maxShapeId;
         maxShapeId++;
         proxyTriShape.transformation =
@@ -124,7 +127,7 @@ class PhysicsWorld: Freeable
 
     RigidBody addDynamicBody(Vector3f pos, float mass = 0.0f)
     {
-        auto b = New!RigidBody();
+        auto b = New!RigidBody(this);
         b.position = pos;
         b.mass = mass;
         b.invMass = 1.0f / mass;
@@ -145,7 +148,7 @@ class PhysicsWorld: Freeable
 
     RigidBody addStaticBody(Vector3f pos)
     {
-        auto b = New!RigidBody();
+        auto b = New!RigidBody(this);
         b.position = pos;
         b.mass = float.infinity;
         b.invMass = 0.0f;
@@ -166,7 +169,7 @@ class PhysicsWorld: Freeable
 
     ShapeComponent addShapeComponent(RigidBody b, Geometry geom, Vector3f position, float mass)
     {
-        auto shape = New!ShapeComponent(geom, position, mass);
+        auto shape = New!ShapeComponent(this, geom, position, mass);
         shapeComponents.append(shape);
         shape.id = maxShapeId;
         maxShapeId++;
@@ -176,7 +179,7 @@ class PhysicsWorld: Freeable
 
     ShapeComponent addSensor(RigidBody b, Geometry geom, Vector3f position)
     {
-        auto shape = New!ShapeComponent(geom, position, 0.0f);
+        auto shape = New!ShapeComponent(this, geom, position, 0.0f);
         shape.raycastable = false;
         shape.solve = false;
         shapeComponents.append(shape);
@@ -593,31 +596,26 @@ class PhysicsWorld: Freeable
 
     ~this()
     {
-        foreach(sh; shapeComponents.data)
-            sh.free();
+        //foreach(sh; shapeComponents.data)
+        //    sh.free();
         shapeComponents.free();
 
-        foreach(b; dynamicBodies.data)
-            b.free();
+        //foreach(b; dynamicBodies.data)
+        //    b.free();
         dynamicBodies.free();
 
-        foreach(b; staticBodies.data)
-            b.free();
+        //foreach(b; staticBodies.data)
+        //    b.free();
         staticBodies.free();
 
-        foreach(c; constraints.data)
-            c.free();
+        //foreach(c; constraints.data)
+        //    c.free();
         constraints.free();
 
-        manifolds.free();
+        //manifolds.free();
 
-        proxyTriGeom.free();
-        proxyTriShape.free();
-        proxyTri.free();
-    }
-
-    void free()
-    {
-        Delete(this);
+        //proxyTriGeom.free();
+        //proxyTriShape.free();
+        //proxyTri.free();
     }
 }

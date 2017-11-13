@@ -28,6 +28,7 @@ DEALINGS IN THE SOFTWARE.
 
 module dmech.pairhashtable;
 
+import dlib.core.ownership;
 import dlib.core.memory;
 import dmech.hashtable;
 
@@ -38,9 +39,9 @@ import dmech.hashtable;
 
 class PairHashTable(T): HashTable!(T, uint)
 {
-    this(size_t size)
+    this(Owner o, size_t size)
     {
-        super(size);
+        super(o, size);
     }
 
     T* get(uint k1, uint k2)
@@ -56,11 +57,6 @@ class PairHashTable(T): HashTable!(T, uint)
     void remove(uint k1, uint k2)
     {
         super.remove(szudzikPair(k1, k2));
-    }
-
-    override void free()
-    {
-        Delete(this);
     }
 }
 

@@ -28,9 +28,10 @@ DEALINGS IN THE SOFTWARE.
 
 module dmech.hashtable;
 
+import dlib.core.ownership;
 import dlib.core.memory;
 
-class HashTable(T, K): Freeable
+class HashTable(T, K): Owner
 {
     struct Entry(T)
     {
@@ -42,8 +43,9 @@ class HashTable(T, K): Freeable
     const size_t size;
     Entry!(T)[] table;
 
-    this(size_t size)
+    this(Owner o, size_t size)
     {
+        super(o);
         this.size = size;
         table = New!(Entry!(T)[])(size);
     }
@@ -101,10 +103,5 @@ class HashTable(T, K): Freeable
     ~this()
     {
         Delete(table);
-    }
-
-    void free()
-    {
-        Delete(this);
     }
 }

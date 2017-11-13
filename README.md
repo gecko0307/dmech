@@ -1,4 +1,6 @@
 [![Build Status](https://travis-ci.org/gecko0307/dmech.svg?branch=master)](https://travis-ci.org/gecko0307/dmech)
+[![DUB Package](https://img.shields.io/dub/v/dmech.svg)](https://code.dlang.org/packages/dmech)
+[![License](http://img.shields.io/badge/license-boost-blue.svg)](http://www.boost.org/LICENSE_1_0.txt)
 
 dmech
 =====
@@ -12,7 +14,6 @@ Screenshots
 
 Features
 --------
-Already implemented:
 * Impulse-based rigid body dynamics with iterative SI solver
 * High-performance collision detection (MPR algorithm)
 * Basic geometry shapes (sphere, box, cylinder, cone, ellipsoid)
@@ -22,6 +23,7 @@ Already implemented:
 * Body constraints: distance, angular, slider, ball-socket, prismatic, hinge
 * Persistent contact cache
 * Ray cast support
+* Ownership-based memory management
 * Partial C API (will be finished soon)
 
 Planned in future:

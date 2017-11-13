@@ -30,6 +30,7 @@ module dmech.rigidbody;
 
 import std.math;
 
+import dlib.core.ownership;
 import dlib.core.memory;
 import dlib.container.array;
 import dlib.math.vector;
@@ -38,6 +39,7 @@ import dlib.math.quaternion;
 import dlib.math.transformation;
 import dlib.math.utils;
 
+import dmech.world;
 import dmech.shape;
 import dmech.contact;
 
@@ -46,7 +48,7 @@ interface CollisionDispatcher
     void onNewContact(RigidBody rb, Contact c);
 }
 
-class RigidBody: Freeable
+class RigidBody: Owner
 {
     Vector3f position;
     Quaternionf orientation;
@@ -105,8 +107,10 @@ class RigidBody: Freeable
     
     float maxSpeed = float.max;
 
-    this()
+    this(PhysicsWorld world)
     {
+        super(world);
+
         position = Vector3f(0.0f, 0.0f, 0.0f);
         orientation = Quaternionf(0.0f, 0.0f, 0.0f, 1.0f);
 
@@ -353,10 +357,5 @@ class RigidBody: Freeable
     {
         shapes.free();
         collisionDispatchers.free();
-    }
-
-    void free()
-    {
-        Delete(this);
     }
 }

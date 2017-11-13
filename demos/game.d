@@ -69,21 +69,21 @@ class TestApp: Application
 
         grid = New!Grid();
         
-        world = New!PhysicsWorld(1000);
+        world = New!PhysicsWorld(null, 1000);
         
-        gFloor = New!GeomBox(Vector3f(40, 1, 40));
+        gFloor = New!GeomBox(world, Vector3f(40, 1, 40));
         bFloor = world.addStaticBody(Vector3f(0, -1, 0));
         world.addShapeComponent(bFloor, gFloor, Vector3f(0, 0, 0), 1.0f);
         
         Vector3f boxHalfSize = Vector3f(0.75f, 0.75f, 0.75f);
-        gBox = New!GeomBox(boxHalfSize); // Physical shape
+        gBox = New!GeomBox(world, boxHalfSize); // Physical shape
         sBox = New!ShapeBox(boxHalfSize); // Graphical shape
       
         Vector3f characterPos = Vector3f(0, 5, 5);
         camera = New!FirstPersonCamera(characterPos);
         camera.turn = -90.0f;
 
-        gSphere = New!GeomSphere(1.0f);
+        gSphere = New!GeomSphere(world, 1.0f);
         charController = New!CharacterController(world, characterPos, 1.0f, gSphere);
         
         boxMaterial = New!Material();
@@ -114,11 +114,8 @@ class TestApp: Application
             d.free();
         drawables.free();
         grid.free();
-        world.free();
+        Delete(world);
         sBox.free();
-        gFloor.free();
-        gBox.free();
-        gSphere.free();
         font.free();
         fpsText.free();
         ctrlText.free();

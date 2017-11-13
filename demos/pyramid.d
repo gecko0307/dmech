@@ -78,13 +78,13 @@ class TestApp: Application
         axes = New!Axes();
         grid = New!Grid();
         
-        world = New!PhysicsWorld(1000);
+        world = New!PhysicsWorld(null, 1000);
         
-        gFloor = New!GeomBox(Vector3f(40, 1, 40));
+        gFloor = New!GeomBox(world, Vector3f(40, 1, 40));
         auto bFloor = world.addStaticBody(Vector3f(0, -1, 0));
         world.addShapeComponent(bFloor, gFloor, Vector3f(0, 0, 0), 1.0f);
         
-        gBox = New!GeomBox(Vector3f(1, 1, 1)); // Physical shape
+        gBox = New!GeomBox(world, Vector3f(1, 1, 1)); // Physical shape
         sBox = New!ShapeBox(Vector3f(1, 1, 1)); // Graphical shape
         
         buildPyramid(7);
@@ -151,11 +151,9 @@ class TestApp: Application
         entities.free();
         axes.free();
         grid.free();
-        world.free();
         sBox.free();
-        
-        gFloor.free();
-        gBox.free();
+
+        Delete(world);
         
         font.free();
         fpsText.free();

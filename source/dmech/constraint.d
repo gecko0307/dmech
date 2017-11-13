@@ -31,18 +31,25 @@ module dmech.constraint;
 import std.math;
 import std.algorithm;
 
+import dlib.core.ownership;
 import dlib.core.memory;
 
 import dlib.math.vector;
 import dlib.math.matrix;
 import dlib.math.quaternion;
 
+import dmech.world;
 import dmech.rigidbody;
 
-abstract class Constraint: Freeable
+abstract class Constraint: Owner
 {
     RigidBody body1;
     RigidBody body2;
+
+    this(Owner o)
+    {
+        super(o);
+    }
 
     void prepare(double delta);
     void step();
@@ -69,8 +76,10 @@ class DistanceConstraint: Constraint
 
     DistanceBehavior behavior = DistanceBehavior.LimitDistance;
 
-    this(RigidBody body1, RigidBody body2, float dist = 0.0f)
+    this(Owner owner, RigidBody body1, RigidBody body2, float dist = 0.0f)
     {
+        super(owner);
+
         this.body1 = body1;
         this.body2 = body2;
 
@@ -187,11 +196,6 @@ class DistanceConstraint: Constraint
             body2.angularVelocity += jacobian[3] * lambda * body2.invInertiaTensor;
         }
     }
-
-	  void free()
-	  {
-	      Delete(this);
-	  }
 }
 
 /*
@@ -214,8 +218,10 @@ class BallConstraint: Constraint
     float effectiveMass;
     float bias;
 
-    this(RigidBody body1, RigidBody body2, Vector3f anchor1, Vector3f anchor2)
+    this(Owner owner, RigidBody body1, RigidBody body2, Vector3f anchor1, Vector3f anchor2)
     {
+        super(owner);
+
         this.body1 = body1;
         this.body2 = body2;
 
@@ -292,11 +298,6 @@ class BallConstraint: Constraint
             body2.angularVelocity += jacobian[3] * body2.invInertiaTensor * lambda;
         }
     }
-
-    void free()
-	  {
-	      Delete(this);
-	  }
 }
 
 /*
@@ -321,8 +322,10 @@ class SliderConstraint: Constraint
     float effectiveMass;
     float bias;
 
-    this(RigidBody body1, RigidBody body2, Vector3f lineStartPointBody1, Vector3f pointBody2)
+    this(Owner owner, RigidBody body1, RigidBody body2, Vector3f lineStartPointBody1, Vector3f pointBody2)
     {
+        super(owner);
+
         this.body1 = body1;
         this.body2 = body2;
 
@@ -411,11 +414,6 @@ class SliderConstraint: Constraint
             body2.angularVelocity += lambda * jacobian[3] * body2.invInertiaTensor;
         }
     }
-
-    void free()
-	  {
-	      Delete(this);
-	  }
 }
 
 /*
@@ -435,8 +433,9 @@ class AngleConstraint: Constraint
     Matrix3x3f effectiveMass;
     Vector3f bias;
 
-    this(RigidBody body1, RigidBody body2)
+    this(Owner owner, RigidBody body1, RigidBody body2)
     {
+        super(owner);
         this.body1 = body1;
         this.body2 = body2;
     }
@@ -493,11 +492,6 @@ class AngleConstraint: Constraint
         if (body2.dynamic)
             body2.angularVelocity += -lambda * body2.invInertiaTensor;
     }
-
-    void free()
-	  {
-	      Delete(this);
-	  }
 }
 
 /*
@@ -523,8 +517,9 @@ class AxisAngleConstraint: Constraint
     Matrix3x3f effectiveMass;
     Vector3f bias;
 
-    this(RigidBody body1, RigidBody body2, Vector3f axis)
+    this(Owner owner, RigidBody body1, RigidBody body2, Vector3f axis)
     {
+        super(owner);
         this.body1 = body1;
         this.body2 = body2;
         this.axis = axis;
@@ -607,11 +602,6 @@ class AxisAngleConstraint: Constraint
         if (body2.dynamic)
             body2.angularVelocity += -impulse * body2.invInertiaTensor;
     }
-
-    void free()
-	  {
-	      Delete(this);
-	  }
 }
 
 /*
@@ -624,13 +614,14 @@ class PrismaticConstraint: Constraint
     AngleConstraint ac;
     SliderConstraint sc;
 
-    this(RigidBody body1, RigidBody body2)
+    this(Owner owner, RigidBody body1, RigidBody body2)
     {
+        super(owner);
         this.body1 = body1;
         this.body2 = body2;
 
-        ac = New!AngleConstraint(body1, body2);
-        sc = New!SliderConstraint(body1, body2,
+        ac = New!AngleConstraint(this, body1, body2);
+        sc = New!SliderConstraint(this, body1, body2,
             Vector3f(0, 0, 0), Vector3f(0, 0, 0));
     }
 
@@ -645,17 +636,6 @@ class PrismaticConstraint: Constraint
         ac.step();
         sc.step();
     }
-
-    ~this()
-    {
-        ac.free();
-        sc.free();
-    }
-
-	  void free()
-	  {
-		    Delete(this);
-	  }
 }
 
 /*
@@ -669,17 +649,19 @@ class HingeConstraint: Constraint
     AxisAngleConstraint aac;
     BallConstraint bc;
 
-    this(RigidBody body1,
+    this(Owner owner, 
+         RigidBody body1,
          RigidBody body2,
          Vector3f anchor1,
          Vector3f anchor2,
          Vector3f axis)
     {
+        super(owner);
         this.body1 = body1;
         this.body2 = body2;
 
-        aac = New!AxisAngleConstraint(body1, body2, axis);
-        bc = New!BallConstraint(body1, body2, anchor1, anchor2);
+        aac = New!AxisAngleConstraint(this, body1, body2, axis);
+        bc = New!BallConstraint(this, body1, body2, anchor1, anchor2);
     }
 
     override void prepare(double dt)
@@ -693,15 +675,4 @@ class HingeConstraint: Constraint
         aac.step();
         bc.step();
     }
-
-    ~this()
-    {
-        aac.free();
-        bc.free();
-    }
-
-	  void free()
-	  {
-		    Delete(this);
-	  }
 }
