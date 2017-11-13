@@ -1,5 +1,7 @@
 module dllmain;
 
+version(Windows):
+
 import std.c.windows.windows;
 import core.sys.windows.dll;
  

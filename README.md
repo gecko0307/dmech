@@ -41,7 +41,7 @@ See [tutorials](/tutorials).
 
 Usage examples
 --------------
-You can find some simple examples in [demos/new](/demos/new) directory. 
+You can find some simple examples in [demos](/demos) directory. 
 
 More advanced, real-world usage examples are [Dagon demo application](http://github.com/gecko0307/dagon-demo) which features vehicle physics and provides better graphics and interesting user interaction, and [Atrium](http://github.com/gecko0307/atrium), an in-development physics based action game. 
 

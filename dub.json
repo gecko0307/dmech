@@ -8,7 +8,7 @@
     ],
 
     "importPaths": [
-        "."
+        "source"
     ],
 
     "dependencies": {
@@ -23,7 +23,7 @@
         {
             "name": "library",
             "targetType": "library",
-            "sourcePaths": ["dmech"]
+            "sourcePaths": ["source/dmech"]
         }
     ]
 }

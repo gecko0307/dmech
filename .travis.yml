@@ -6,7 +6,7 @@ os:
 
 language: d
 
-before_script: cd demos/new
+before_script: cd demos
 
 d:
  - dmd-2.076.0

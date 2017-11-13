@@ -7,11 +7,13 @@
     "homepage": "http://github.com/gecko0307/dmech",
     "name": "demo",
     "importPaths": [
-        "."
+        ".", "../../source"
+    ],
+    "sourcePaths": [
+        ".", "../../source"
     ],
     "dependencies": {
         "dlib": "0.12.2",
-        "dmech": "~master"
     },
     "buildRequirements":[
         "allowWarnings"
@@ -22,7 +24,6 @@
             "name": "pyramid",
             "targetName": "pyramid",
             "targetType": "executable",
-            "sourcePaths": ["."],
             "mainSourceFile": "pyramid.d",
             "excludedSourceFiles": ["simple.d", "game.d"],
             "buildOptions": ["noBoundsCheck", "optimize"]
@@ -31,7 +32,6 @@
             "name": "simple",
             "targetName": "simple",
             "targetType": "executable",
-            "sourcePaths": ["."],
             "mainSourceFile": "simple.d",
             "excludedSourceFiles": ["pyramid.d", "game.d"],
             "buildOptions": ["noBoundsCheck", "optimize"]
@@ -40,10 +40,10 @@
             "name": "game",
             "targetName": "game",
             "targetType": "executable",
-            "sourcePaths": ["."],
             "mainSourceFile": "game.d",
             "excludedSourceFiles": ["simple.d", "pyramid.d"],
             "buildOptions": ["noBoundsCheck", "optimize"]
         }
     ]
 }
+
