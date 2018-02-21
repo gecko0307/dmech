@@ -11,6 +11,12 @@ before_script: cd demos
 d:
  - dmd-2.076.0
  - ldc-1.4.0
+ 
+matrix:
+  fast_finish: true
+  allow_failures:
+   - d: ldc-1.4.0
+     os: osx
 
 env: 
   matrix:
