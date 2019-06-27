@@ -2,21 +2,19 @@ sudo: false
 
 os:
  - linux
- - osx
 
 language: d
 
 before_script: cd demos
 
 d:
- - dmd-2.076.0
- - ldc-1.4.0
+ - dmd-2.086.1
+ - dmd-2.085.1
+ - ldc-1.16.0
+ - ldc-1.15.0
  
 matrix:
   fast_finish: true
-  allow_failures:
-   - d: ldc-1.4.0
-     os: osx
 
 env: 
   matrix:
