@@ -32,7 +32,7 @@ import std.stdio;
 
 import dlib.core.memory;
 import dlib.container.array;
-import dlib.container.aarray;
+import dlib.container.dict;
 import dlib.image.color;
 
 import dgl.core.interfaces;
@@ -58,9 +58,9 @@ class Scene: Drawable
 	DynamicArray!Mesh _meshes;
 	DynamicArray!Material _materials;
 
-	AArray!size_t entitiesByName;
-	AArray!size_t meshesByName;
-	AArray!size_t materialsByName;
+	Dict!(size_t, string) entitiesByName;
+	Dict!(size_t, string) meshesByName;
+	Dict!(size_t, string) materialsByName;
 
     bool visible = true;
     bool lighted = true;
@@ -101,9 +101,9 @@ class Scene: Drawable
 
     protected void createArrays()
     {
-	    entitiesByName = New!(AArray!size_t);
-	    meshesByName = New!(AArray!size_t);
-		  materialsByName = New!(AArray!size_t);
+	    entitiesByName = New!(Dict!(size_t, string));
+	    meshesByName = New!(Dict!(size_t, string));
+		materialsByName = New!(Dict!(size_t, string));
     }
 
     void clearArrays()

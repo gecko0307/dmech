@@ -34,7 +34,7 @@ import derelict.opengl.gl;
 import dlib.core.memory;
 import dlib.math.vector;
 import dlib.math.matrix;
-import dlib.math.affine;
+import dlib.math.transformation;
 import dlib.math.quaternion;
 import dlib.geometry.aabb;
 import dgl.core.interfaces;
@@ -171,12 +171,7 @@ class Entity: Object3D
     override string toString()
     {
         return format(
-            "type = %s\n"
-            "materialId = %s\n"
-            "meshId = %s\n"
-            "position = %s\n"
-            "rotation = %s\n"
-            "scaling = %s",
+            "type = %s\nmaterialId = %s\nmeshId = %s\nposition = %s\nrotation = %s\nscaling = %s",
             type,
             materialId,
             meshId,

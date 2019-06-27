@@ -31,7 +31,7 @@ module dgl.graphics.billboard;
 import derelict.opengl.gl;
 import dlib.math.vector;
 import dlib.math.matrix;
-import dlib.math.affine;
+import dlib.math.transformation;
 
 void drawBillboard(Matrix4x4f cameraTransformation, Vector3f position, float scale)
 {

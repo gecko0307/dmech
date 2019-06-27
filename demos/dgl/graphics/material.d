@@ -149,12 +149,7 @@ class Material: Modifier
     override string toString()
     {
         return format(
-            "id = %s\n"
-            "name = %s\n"
-            "ambientColor = %s\n"
-            "diffuseColor = %s\n"
-            "specularColor = %s\n"
-            "emissionColor = %s",
+            "id = %s\nname = %s\nambientColor = %s\ndiffuseColor = %s\nspecularColor = %s\nemissionColor = %s",
             id,
             name,
             ambientColor,

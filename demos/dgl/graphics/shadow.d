@@ -36,7 +36,7 @@ import dlib.core.memory;
 import dlib.container.array;
 import dlib.math.vector;
 import dlib.math.matrix;
-import dlib.math.affine;
+import dlib.math.transformation;
 import dlib.math.utils;
 
 import dgl.core.interfaces;

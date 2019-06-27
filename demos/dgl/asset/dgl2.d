@@ -80,11 +80,7 @@ struct DataChunk
     string toString()
     {
         return format(
-            "type = %s\n"
-            "id = %s\n"
-            "nameSize = %s\n"
-            "dataSize = %s\n"
-            "name = %s",
+            "type = %s\nid = %s\nnameSize = %s\ndataSize = %s\nname = %s",
             type.to!ChunkType, id,
             nameSize, dataSize, name
         );

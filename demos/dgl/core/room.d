@@ -32,7 +32,7 @@ import std.stdio;
 import dlib.core.memory;
 import dlib.image.color;
 import dlib.container.array;
-import dlib.container.aarray;
+import dlib.container.dict;
 import dgl.core.application;
 import dgl.core.event;
 import dgl.core.layer;
@@ -110,7 +110,7 @@ class Room: EventListener
 
 class RoomApplication: Application
 {
-    AArray!Room rooms;
+    Dict!(Room, string) rooms;
     Room currentRoom;
     string currentRoomName;
 
@@ -124,7 +124,7 @@ class RoomApplication: Application
         bool resizableWindow = true)
     {
         super(width, height, caption, unicodeInput, showCursor, resizableWindow);
-        rooms = New!(AArray!Room)();
+        rooms = New!(Dict!(Room, string))();
     }
 
     Room getRoom(string name)

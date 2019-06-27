@@ -13,7 +13,7 @@
         ".", "../source"
     ],
     "dependencies": {
-        "dlib": "0.12.2",
+        "dlib": "0.16.0",
     },
     "buildRequirements":[
         "allowWarnings"
@@ -25,24 +25,21 @@
             "targetName": "pyramid",
             "targetType": "executable",
             "mainSourceFile": "pyramid.d",
-            "excludedSourceFiles": ["simple.d", "game.d"],
-            "buildOptions": ["noBoundsCheck", "optimize"]
+            "excludedSourceFiles": ["simple.d", "game.d"]
         },
         {
             "name": "simple",
             "targetName": "simple",
             "targetType": "executable",
             "mainSourceFile": "simple.d",
-            "excludedSourceFiles": ["pyramid.d", "game.d"],
-            "buildOptions": ["noBoundsCheck", "optimize"]
+            "excludedSourceFiles": ["pyramid.d", "game.d"]
         },
         {
             "name": "game",
             "targetName": "game",
             "targetType": "executable",
             "mainSourceFile": "game.d",
-            "excludedSourceFiles": ["simple.d", "pyramid.d"],
-            "buildOptions": ["noBoundsCheck", "optimize"]
+            "excludedSourceFiles": ["simple.d", "pyramid.d"]
         }
     ]
 }

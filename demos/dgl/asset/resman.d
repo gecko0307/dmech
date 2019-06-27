@@ -32,7 +32,7 @@ import std.stdio;
 import std.file;
 import dlib.core.memory;
 import dlib.container.array;
-import dlib.container.aarray;
+import dlib.container.dict;
 import dlib.image.io.png;
 import dlib.filesystem.filesystem;
 import dlib.filesystem.stdfs;
@@ -50,11 +50,11 @@ class ResourceManager: Freeable, Drawable
 {
     VirtualFileSystem fs;
     UnmanagedImageFactory imgFac;
-    AArray!Font fonts;
-    AArray!Texture textures;
+    Dict!(Font, string) fonts;
+    Dict!(Texture, string) textures;
 
     DynamicArray!Scene _scenes;
-    AArray!size_t scenesByName;
+    Dict!(size_t, string) scenesByName;
 
     LightManager lm;
     ShadowMap shadow;
@@ -64,9 +64,9 @@ class ResourceManager: Freeable, Drawable
     {
         fs = New!VirtualFileSystem();
         imgFac = New!UnmanagedImageFactory();
-        fonts = New!(AArray!Font)();
-        textures = New!(AArray!Texture)();
-        scenesByName = New!(AArray!size_t)();
+        fonts = New!(Dict!(Font, string))();
+        textures = New!(Dict!(Texture, string))();
+        scenesByName = New!(Dict!(size_t, string))();
         lm = New!LightManager();
         lm.lightsVisible = true;
     }
