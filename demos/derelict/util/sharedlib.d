@@ -81,7 +81,7 @@ version(Nix)
     }
     else version(linux)
     {
-        private import core.sys.posix;
+        private import core.sys.posix.dlfcn;
     }
     else
     {
