@@ -51,6 +51,6 @@ More advanced, real-world usage examples are [Dagon demo application](http://git
 
 License
 -------
-Copyright (c) 2013-2018 Timur Gafarov.
+Copyright (c) 2013-2020 Timur Gafarov.
 Distributed under the Boost Software License, Version 1.0. (See accompanying file COPYING or at http://www.boost.org/LICENSE_1_0.txt)
 
