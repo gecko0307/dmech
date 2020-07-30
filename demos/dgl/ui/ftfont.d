@@ -81,7 +81,7 @@ class CharStorage(T): BST!(T)
             return node.value;
     }
 
-    T* opIn_r(dchar k)
+    T* opBinaryRight(string op)(dchar k) if (op == "in")
     {
         auto node = find(k);
         if (node !is null)
