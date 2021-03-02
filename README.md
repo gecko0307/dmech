@@ -4,11 +4,9 @@
 
 dmech
 =====
-> dmech is discontinued. If you need a mature physics engine to use with D, we recommended [Newton Game Dynamics](http://newtondynamics.com) and corresponding [BindBC binding](https://github.com/gecko0307/bindbc-newton).
+> dmech is discontinued. If you need a mature physics engine to use with D, we recommended [Newton Dynamics](http://newtondynamics.com) and corresponding [BindBC binding](https://github.com/gecko0307/bindbc-newton).
 
 dmech stands for "D mechanics": it is a real-time 3D physics engine written in D language, capable of simulating rigid body dynamics. It is more suitable for computer games than scientific simulations: the goal is to convince a player, rather than giving accurate results. dmech is GC-free and fully platform-independent, it can be used with any API or graphics engine.
-
-If you like dmech, please support its development on [Patreon](https://www.patreon.com/gecko0307). You can also make one-time donation via [PayPal](https://www.paypal.me/tgafarov). I appreciate any support. Thanks in advance!
 
 Screenshots
 -----------
@@ -28,14 +26,7 @@ Features
 * Persistent contact cache
 * Ray cast support
 * Ownership-based memory management
-* Partial C API (will be finished soon)
-
-Planned in future:
-* More shapes (capsule, plane, convex hull, etc.)
-* Minkowski sum shape
-* Force fields
-* Convex cast
-* In long-term: vehicle engine, particles, soft-body physics, OpenCL support
+* Partial C API
 
 Dependencies
 ------------
