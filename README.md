@@ -4,7 +4,7 @@
 
 dmech
 =====
-> dmech is discontinued. If you need a mature physics engine to use with D, we recommended [Newton Dynamics](http://newtondynamics.com) and corresponding [BindBC binding](https://github.com/gecko0307/bindbc-newton).
+> dmech is discontinued. If you need a mature physics engine to use with D, we recommend [Newton Dynamics](http://newtondynamics.com) and corresponding [BindBC binding](https://github.com/gecko0307/bindbc-newton).
 
 dmech stands for "D mechanics": it is a real-time 3D physics engine written in D language, capable of simulating rigid body dynamics. It is more suitable for computer games than scientific simulations: the goal is to convince a player, rather than giving accurate results. dmech is GC-free and fully platform-independent, it can be used with any API or graphics engine.
 
