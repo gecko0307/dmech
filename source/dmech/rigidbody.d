@@ -1,5 +1,5 @@
 /*
-Copyright (c) 2013-2017 Timur Gafarov
+Copyright (c) 2013-2025 Timur Gafarov
 
 Boost Software License - Version 1.0 - August 17th, 2003
 
@@ -25,7 +25,6 @@ FOR ANY DAMAGES OR OTHER LIABILITY, WHETHER IN CONTRACT, TORT OR OTHERWISE,
 ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
 DEALINGS IN THE SOFTWARE.
 */
-
 module dmech.rigidbody;
 
 import std.math;
@@ -80,7 +79,7 @@ class RigidBody: Owner
     bool useGravity = true;
     bool enableRotation = true;
 
-    DynamicArray!ShapeComponent shapes;
+    Array!ShapeComponent shapes;
 
     bool dynamic;
 
@@ -91,7 +90,7 @@ class RigidBody: Owner
     bool useOwnGravity = false;
     Vector3f gravity = Vector3f(0, 0, 0);
 
-    DynamicArray!CollisionDispatcher collisionDispatchers;
+    Array!CollisionDispatcher collisionDispatchers;
 
     void contactEvent(Contact c)
     {

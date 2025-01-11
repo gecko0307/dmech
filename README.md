@@ -38,12 +38,9 @@ See [tutorials](/tutorials).
 
 Usage examples
 --------------
-You can find some simple examples in [demos](/demos) directory. 
-
-More advanced, real-world usage examples are [Dagon demo application](http://github.com/gecko0307/dagon-demo) which features vehicle physics and provides better graphics and interesting user interaction, and [Atrium](http://github.com/gecko0307/atrium), an in-development physics based action game. 
+You can find some simple examples in [demos](/demos) directory.
 
 License
 -------
-Copyright (c) 2013-2020 Timur Gafarov.
+Copyright (c) 2013-2025 Timur Gafarov.
 Distributed under the Boost Software License, Version 1.0. (See accompanying file COPYING or at http://www.boost.org/LICENSE_1_0.txt)
-

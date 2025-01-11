@@ -1,0 +1,14 @@
+{
+    "name": "test",
+    "description": "dmech demo",
+    "homepage": "http://github.com/gecko0307/dmech",
+    "license": "Boost",
+    "authors": [
+        "Timur Gafarov"
+    ],
+    
+    "dependencies": {
+        "dagon": "~>0.18.0",
+        "dmech": { "path": ".." }
+    }
+}

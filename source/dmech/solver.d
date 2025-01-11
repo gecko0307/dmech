@@ -1,5 +1,5 @@
 /*
-Copyright (c) 2013-2017 Timur Gafarov 
+Copyright (c) 2013-2025 Timur Gafarov 
 
 Boost Software License - Version 1.0 - August 17th, 2003
 
@@ -25,7 +25,6 @@ FOR ANY DAMAGES OR OTHER LIABILITY, WHETHER IN CONTRACT, TORT OR OTHERWISE,
 ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
 DEALINGS IN THE SOFTWARE.
 */
-
 module dmech.solver;
 
 import std.math;
@@ -93,19 +92,10 @@ void solveContact(Contact* c, double dt)
 
     float bias = 0.01f;
 
-    // Velocity-based position correction
-  /*
-    float allowedPenetration = 0.01f;
-    float biasFactor = 0.3f; // 0.1 to 0.3
-    bias = biasFactor * (1.0f / dt) * max(0.0f, c.penetration - allowedPenetration);
-  */
     float a = velocityProjection;
     float b = c.effectiveMass;
 
     float normalImpulse = (C - a + bias) / b;
-
-    //if (normalImpulse < 0.0f)
-    //    normalImpulse = 0.0f;
 
     // Friction
     float mu = (body1.friction + body2.friction) * 0.5f;
@@ -167,7 +157,6 @@ void solvePositionError(Contact* c, uint numContacts)
     
     float ERP = (1.0f / numContacts) * 0.94f;
     float pc = c.penetration * ERP;
-    //c.penetration -= pc;
     c.penetration = 0.0f;
     
     if (pvp >= pc)
@@ -181,4 +170,3 @@ void solvePositionError(Contact* c, uint numContacts)
     body1.applyPseudoImpulse(+impulseVec, c.point);
     body2.applyPseudoImpulse(-impulseVec, c.point);
 }
-

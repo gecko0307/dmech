@@ -1,5 +1,5 @@
 /*
-Copyright (c) 2014-2017 Timur Gafarov
+Copyright (c) 2014-2025 Timur Gafarov
 
 Boost Software License - Version 1.0 - August 17th, 2003
 
@@ -25,7 +25,6 @@ FOR ANY DAMAGES OR OTHER LIABILITY, WHETHER IN CONTRACT, TORT OR OTHERWISE,
 ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
 DEALINGS IN THE SOFTWARE.
 */
-
 module dmech.jss;
 
 import dlib.math.vector;
@@ -634,4 +633,3 @@ struct JohnsonSimplexSolver
     // The first column stores the squared length for each point
     float[4][16] determinants;
 }
-

@@ -1,5 +1,5 @@
 /*
-Copyright (c) 2013-2017 Timur Gafarov
+Copyright (c) 2013-2025 Timur Gafarov
 
 Boost Software License - Version 1.0 - August 17th, 2003
 
@@ -25,7 +25,6 @@ FOR ANY DAMAGES OR OTHER LIABILITY, WHETHER IN CONTRACT, TORT OR OTHERWISE,
 ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
 DEALINGS IN THE SOFTWARE.
 */
-
 module dmech.constraint;
 
 import std.math;
@@ -453,23 +452,7 @@ class AngleConstraint: Constraint
         effectiveMass = effectiveMass.inverse;
 
         Quaternionf dq = body2.orientation * body1.orientation.conj;
-        Vector3f axis = dq.generator;
-/*
-        // Matrix version
-        Matrix3x3f orientationDifference = Matrix3x3f.identity;
-        auto rot1 = body1.orientation.toMatrix3x3;
-        auto rot2 = body2.orientation.toMatrix3x3;
-        Matrix3x3f q = orientationDifference * rot2 * rot1.inverse;
-
-        Vector3f axis;
-        float x = q.a32 - q.a23;
-        float y = q.a13 - q.a31;
-        float z = q.a21 - q.a12;
-        float r = sqrt(x * x + y * y + z * z);
-        float t = q.a11 + q.a22 + q.a33;
-        float angle = atan2(r, t - 1);
-        axis = Vector3f(x, y, z) * angle;
-*/
+        Vector3f axis = dq.rotationAxis;
 
         bias = axis * biasFactor * (-1.0f / dt);
 

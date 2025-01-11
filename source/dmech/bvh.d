@@ -1,5 +1,5 @@
 /*
-Copyright (c) 2011-2017 Timur Gafarov 
+Copyright (c) 2011-2025 Timur Gafarov 
 
 Boost Software License - Version 1.0 - August 17th, 2003
 
@@ -126,12 +126,12 @@ AABB enclosingAABB(T)(T[] objects)
 
 class BVHNode(T)
 {
-    DynamicArray!T objects;
+    Array!T objects;
     AABB aabb;
     BVHNode[2] child;
     uint userData;
 
-    this(DynamicArray!T objs)
+    this(Array!T objs)
     {
         objects = objs;
         aabb = enclosingAABB(objects.data);

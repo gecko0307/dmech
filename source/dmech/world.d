@@ -1,5 +1,5 @@
 /*
-Copyright (c) 2013-2017 Timur Gafarov
+Copyright (c) 2013-2025 Timur Gafarov
 
 Boost Software License - Version 1.0 - August 17th, 2003
 
@@ -25,7 +25,6 @@ FOR ANY DAMAGES OR OTHER LIABILITY, WHETHER IN CONTRACT, TORT OR OTHERWISE,
 ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
 DEALINGS IN THE SOFTWARE.
 */
-
 module dmech.world;
 
 import std.math;
@@ -65,10 +64,10 @@ alias PairHashTable!PersistentContactManifold ContactCache;
 
 class PhysicsWorld: Owner
 {
-    DynamicArray!ShapeComponent shapeComponents;
-    DynamicArray!RigidBody staticBodies;
-    DynamicArray!RigidBody dynamicBodies;
-    DynamicArray!Constraint constraints;
+    Array!ShapeComponent shapeComponents;
+    Array!RigidBody staticBodies;
+    Array!RigidBody dynamicBodies;
+    Array!Constraint constraints;
 
     Vector3f gravity;
 
@@ -294,7 +293,7 @@ class PhysicsWorld: Owner
         foreach(tri; bvhRoot.traverseByRay(&ray))
         {
             Vector3f ip;
-            bool hit = ray.intersectTriangle(tri.v[0], tri.v[1], tri.v[2], ip);
+            bool hit = ray.intersectTriangle(tri, ip);
             if (hit)
             {
                 float param = distance(rayStart, ip);
@@ -460,7 +459,6 @@ class PhysicsWorld: Owner
             * are within epsilon of each other. When merging the contacts, average and
             * re-normalize the normals, and average the penetration depth value.
             */
-
             int deepestContactIdx = -1;
             float maxPen = 0.0f;
             float bestGroundness = -1.0f;
@@ -500,8 +498,6 @@ class PhysicsWorld: Owner
             }
             else
             {
-                //manifolds.remove(shape.id, proxyTriShape.id);
-
                 auto m = manifolds.get(shape.id, proxyTriShape.id);
                 if (m !is null)
                 {
@@ -596,26 +592,9 @@ class PhysicsWorld: Owner
 
     ~this()
     {
-        //foreach(sh; shapeComponents.data)
-        //    sh.free();
         shapeComponents.free();
-
-        //foreach(b; dynamicBodies.data)
-        //    b.free();
         dynamicBodies.free();
-
-        //foreach(b; staticBodies.data)
-        //    b.free();
         staticBodies.free();
-
-        //foreach(c; constraints.data)
-        //    c.free();
         constraints.free();
-
-        //manifolds.free();
-
-        //proxyTriGeom.free();
-        //proxyTriShape.free();
-        //proxyTri.free();
     }
 }
