@@ -54,9 +54,9 @@ class Scene: Drawable
 {
     ResourceManager rm;
 
-	DynamicArray!Entity _entities;
-	DynamicArray!Mesh _meshes;
-	DynamicArray!Material _materials;
+	Array!Entity _entities;
+	Array!Mesh _meshes;
+	Array!Material _materials;
 
 	Dict!(size_t, string) entitiesByName;
 	Dict!(size_t, string) meshesByName;

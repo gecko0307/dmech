@@ -32,7 +32,6 @@ import std.stdio;
 import std.conv;
 import dlib.core.memory;
 import dlib.container.dict;
-import dlib.coding.hash;
 import dlib.math.vector;
 import dlib.image.color;
 import dgl.dml.lexer;

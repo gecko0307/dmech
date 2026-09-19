@@ -46,7 +46,7 @@ import dgl.graphics.scene;
 
 class FaceGroup: Freeable
 {
-    DynamicArray!Triangle tris;
+    Array!Triangle tris;
     uint displayList;
     int materialIndex;
     Material material;
@@ -69,7 +69,7 @@ bool vectorsAlmostSame(Vector3f v1, Vector3f v2) nothrow
     return (v1 - v2).length < 0.00001f;
 }
 
-int hasVector(ref DynamicArray!Vector3f arr, Vector3f vec)
+int hasVector(ref Array!Vector3f arr, Vector3f vec)
 {
     foreach(i, v; arr.data)
     {
@@ -86,7 +86,7 @@ class Mesh: Drawable
     int id;
     string name;
     Triangle[] tris;
-    DynamicArray!FaceGroup fgroups;
+    Array!FaceGroup fgroups;
 
     this(Triangle[] tris)
     {
@@ -98,10 +98,10 @@ class Mesh: Drawable
 
     protected void genTangents()
     {
-        DynamicArray!Vector3f vertices;
-        DynamicArray!Vector3f normals;
-        DynamicArray!Vector2f texcoords;
-        DynamicArray!(uint[3]) triangles;
+        Array!Vector3f vertices;
+        Array!Vector3f normals;
+        Array!Vector2f texcoords;
+        Array!(uint[3]) triangles;
 
         foreach(ref tri; tris)
         {
@@ -209,7 +209,8 @@ class Mesh: Drawable
         foreach(ti, ref tri; tris)
         foreach(i; 0..3)
         {
-            tri.tg[i] = tangents[triangles.data[ti][i]];
+            Vector3f tangent = tangents[triangles.data[ti][i]];
+            tri.tg[i] = Vector4f(tangent.x, tangent.y, tangent.z, 0.0f);
         }
 
         Delete(sTan);

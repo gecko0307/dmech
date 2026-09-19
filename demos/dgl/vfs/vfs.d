@@ -77,7 +77,7 @@ class StdDirFileSystem: ReadOnlyFileSystem, Freeable
 
 class VirtualFileSystem: ReadOnlyFileSystem, Freeable
 {
-    DynamicArray!StdDirFileSystem mounted;
+    Array!StdDirFileSystem mounted;
 
     void mount(string dir)
     {

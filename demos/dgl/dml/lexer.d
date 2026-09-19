@@ -37,7 +37,7 @@ import dgl.dml.utf8;
 struct Lexeme
 {
     bool valid = true;
-    DynamicArray!(dchar, 32) str;
+    Array!(dchar, 32) str;
 
     void free()
     {

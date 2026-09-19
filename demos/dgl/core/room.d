@@ -42,7 +42,7 @@ import dgl.core.layer;
 class Room: EventListener
 {
     RoomApplication app;
-    DynamicArray!Layer layers;
+    Array!Layer layers;
 
     this(EventManager em, RoomApplication app)
     {

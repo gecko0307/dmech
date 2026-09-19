@@ -53,7 +53,7 @@ class ResourceManager: Freeable, Drawable
     Dict!(Font, string) fonts;
     Dict!(Texture, string) textures;
 
-    DynamicArray!Scene _scenes;
+    Array!Scene _scenes;
     Dict!(size_t, string) scenesByName;
 
     LightManager lm;

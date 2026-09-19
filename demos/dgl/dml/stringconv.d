@@ -7,7 +7,7 @@ import std.conv;
 
 // GC-free storage for dynamically generated strings
 
-DynamicArray!string globalStringArray;
+Array!string globalStringArray;
 
 // TODO: replace std.conv.to with completely GC-free converter
 string convToStr(T)(T v)

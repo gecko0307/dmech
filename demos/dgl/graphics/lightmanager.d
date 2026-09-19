@@ -42,7 +42,7 @@ public import dgl.graphics.light;
 
 class LightManager: Modifier3D, Drawable
 {
-    DynamicArray!Light lights;
+    Array!Light lights;
     uint maxLightsPerObject = 4;
     bool lightsVisible = false;
     bool lightsOn = true;
