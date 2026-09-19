@@ -37,7 +37,7 @@ class TestApp: Application
     FirstPersonCamera camera;
     CharacterController charController;
     
-    DynamicArray!Drawable drawables;
+    Array!Drawable drawables;
     Vector4f lightPosition;
 
     Grid grid;

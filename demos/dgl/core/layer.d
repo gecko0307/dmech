@@ -53,8 +53,8 @@ class Layer: EventListener, Drawable
     LayerType type;
     float aspectRatio;
 
-    DynamicArray!Drawable drawables;
-    DynamicArray!Modifier modifiers;
+    Array!Drawable drawables;
+    Array!Modifier modifiers;
 
     this(EventManager emngr, LayerType type)
     {

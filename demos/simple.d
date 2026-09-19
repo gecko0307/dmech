@@ -33,7 +33,7 @@ import testbed.physicsentity;
 class TestApp: Application
 {
     TrackballCamera camera;
-    DynamicArray!Drawable drawables;
+    Array!Drawable drawables;
     Vector4f lightPosition;
     
     Axes axes;

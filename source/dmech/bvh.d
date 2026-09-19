@@ -284,9 +284,9 @@ enum Heuristic
     //ESC  // Early Split Clipping
 }
 
-DynamicArray!T duplicate(T)(DynamicArray!T arr)
+Array!T duplicate(T)(Array!T arr)
 {
-    DynamicArray!T res;
+    Array!T res;
     foreach(v; arr.data)
         res.append(v);
     return res;
@@ -296,7 +296,7 @@ class BVHTree(T)
 {
     BVHNode!T root;
 
-    this(DynamicArray!T objects, 
+    this(Array!T objects, 
          uint maxObjectsPerNode = 8,
          uint maxRecursionDepth = 10,
          Heuristic splitHeuristic = Heuristic.SAH)
@@ -313,7 +313,7 @@ class BVHTree(T)
     import std.stdio;
 
     BVHNode!T construct(
-         DynamicArray!T objects, 
+         Array!T objects, 
          uint rec,
          uint maxObjectsPerNode,
          uint maxRecursionDepth,
@@ -343,8 +343,8 @@ class BVHTree(T)
 
         auto boxes = boxSplitWithPlane(box, sp);
 
-        DynamicArray!T leftObjects;
-        DynamicArray!T rightObjects;
+        Array!T leftObjects;
+        Array!T rightObjects;
         
         foreach(obj; node.objects.data)
         {

@@ -38,8 +38,8 @@ import testbed.physicsentity;
 class TestApp: Application
 {
     TrackballCamera camera;
-    DynamicArray!Material materials;
-    DynamicArray!Drawable drawables;
+    Array!Material materials;
+    Array!Drawable drawables;
     Vector4f lightPosition;
     
     Axes axes;
@@ -55,7 +55,7 @@ class TestApp: Application
     Font font;
     TextLine fpsText;
     
-    DynamicArray!PhysicsEntity entities;
+    Array!PhysicsEntity entities;
     PhysicsEntity selectedEntity;
     
     float aspectRatio;

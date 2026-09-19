@@ -120,14 +120,14 @@ class Texture: Modifier
 
         switch (img.pixelFormat)
         {
-            case PixelFormat.L8:     format = GL_LUMINANCE; break;
-            case PixelFormat.LA8:    format = GL_LUMINANCE_ALPHA; break;
-            case PixelFormat.RGB8:   format = GL_RGB; break;
-            case PixelFormat.RGBA8:  format = GL_RGBA; break;
-            case PixelFormat.L16:    format = GL_LUMINANCE;       type = GL_UNSIGNED_SHORT; break;
-            case PixelFormat.LA16:   format = GL_LUMINANCE_ALPHA; type = GL_UNSIGNED_SHORT; break;
-            case PixelFormat.RGB16:  format = GL_RGB;             type = GL_UNSIGNED_SHORT; break;
-            case PixelFormat.RGBA16: format = GL_RGBA;            type = GL_UNSIGNED_SHORT; break;
+            case IntegerPixelFormat.L8:     format = GL_LUMINANCE; break;
+            case IntegerPixelFormat.LA8:    format = GL_LUMINANCE_ALPHA; break;
+            case IntegerPixelFormat.RGB8:   format = GL_RGB; break;
+            case IntegerPixelFormat.RGBA8:  format = GL_RGBA; break;
+            case IntegerPixelFormat.L16:    format = GL_LUMINANCE;       type = GL_UNSIGNED_SHORT; break;
+            case IntegerPixelFormat.LA16:   format = GL_LUMINANCE_ALPHA; type = GL_UNSIGNED_SHORT; break;
+            case IntegerPixelFormat.RGB16:  format = GL_RGB;             type = GL_UNSIGNED_SHORT; break;
+            case IntegerPixelFormat.RGBA16: format = GL_RGBA;            type = GL_UNSIGNED_SHORT; break;
             default:
                 assert(0, "Texture.createFromImage is not implemented for PixelFormat " ~ img.pixelFormat.to!string);
         }
