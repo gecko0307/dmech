@@ -176,20 +176,43 @@ void loadLibraries()
 
     version(Windows)
     {
-        DerelictSDL.load("lib/SDL.dll");
-        DerelictFT.load("lib/freetype.dll");
+        version(X86)
+        {
+            DerelictSDL.load("lib/SDL.dll");
+            DerelictFT.load("lib/freetype.dll");
+        }
+        else version(X86_64)
+        {
+            DerelictSDL.load("lib64/SDL.dll");
+            DerelictFT.load("lib64/freetype.dll");
+        }
     }
     version(linux)
     {
-        try
-            DerelictSDL.load();
-        catch (Exception e)
-            DerelictSDL.load("./lib/libsdl.so");
+        version(X86)
+        {
+            try
+                DerelictSDL.load();
+            catch (Exception e)
+                DerelictSDL.load("./lib/libsdl.so");
 
-        try
-            DerelictFT.load();
-        catch (Exception e)
-            DerelictFT.load("./lib/libfreetype.so");
+            try
+                DerelictFT.load();
+            catch (Exception e)
+                DerelictFT.load("./lib/libfreetype.so");
+        }
+        else version(X86_64)
+        {
+            try
+                DerelictSDL.load();
+            catch (Exception e)
+                DerelictSDL.load("./lib64/libsdl.so");
+
+            try
+                DerelictFT.load();
+            catch (Exception e)
+                DerelictFT.load("./lib64/libfreetype.so");
+        }
     }
     version(OSX)
     {
