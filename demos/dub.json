@@ -13,7 +13,7 @@
         ".", "../source"
     ],
     "dependencies": {
-        "dlib": "~>0.19.1",
+        "dlib": "~>1.7.1",
     },
     "buildRequirements":[
         "allowWarnings"

@@ -14,7 +14,7 @@ import dmech.bvh;
 // transformed triangles for entities.
 BVHTree!Triangle sceneBVH(Scene scene)
 {
-    DynamicArray!Triangle tris;
+    Array!Triangle tris;
 
     foreach(i, e; scene.entities)
     {

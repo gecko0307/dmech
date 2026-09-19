@@ -39,6 +39,7 @@ import dlib.math.vector;
 import dlib.geometry.aabb;
 import dlib.geometry.sphere;
 import dlib.geometry.ray;
+import dlib.geometry.triangle;
 
 /*
  * Bounding Volume Hierarchy implementation
@@ -284,9 +285,9 @@ enum Heuristic
     //ESC  // Early Split Clipping
 }
 
-DynamicArray!T duplicate(T)(DynamicArray!T arr)
+Array!T duplicate(T)(Array!T arr)
 {
-    DynamicArray!T res;
+    Array!T res;
     foreach(v; arr.data)
         res.append(v);
     return res;
@@ -296,7 +297,7 @@ class BVHTree(T)
 {
     BVHNode!T root;
 
-    this(DynamicArray!T objects, 
+    this(Array!T objects, 
          uint maxObjectsPerNode = 8,
          uint maxRecursionDepth = 10,
          Heuristic splitHeuristic = Heuristic.SAH)
@@ -313,7 +314,7 @@ class BVHTree(T)
     import std.stdio;
 
     BVHNode!T construct(
-         DynamicArray!T objects, 
+         Array!T objects, 
          uint rec,
          uint maxObjectsPerNode,
          uint maxRecursionDepth,
@@ -343,9 +344,9 @@ class BVHTree(T)
 
         auto boxes = boxSplitWithPlane(box, sp);
 
-        DynamicArray!T leftObjects;
-        DynamicArray!T rightObjects;
-        
+        Array!T leftObjects;
+        Array!T rightObjects;
+
         foreach(obj; node.objects.data)
         {
             if (boxes[0].intersectsAABB(obj.boundingBox))
@@ -440,5 +441,76 @@ class BVHTree(T)
         float depth = bbox.pmax.z - bbox.pmin.z;
         return 2.0f * (width * height + width * depth + height * depth);
     }
+}
+
+unittest
+{
+    // Triangles lying in the XZ plane (y = 0), spread along the X axis
+    Triangle makeTri(float cx)
+    {
+        Triangle tri;
+        tri.v[0] = Vector3f(cx - 1.0f, 0.0f, -1.0f);
+        tri.v[1] = Vector3f(cx + 1.0f, 0.0f,  0.0f);
+        tri.v[2] = Vector3f(cx - 1.0f, 0.0f,  1.0f);
+        tri.normal = Vector3f(0, 1, 0);
+        tri.barycenter = Vector3f(cx, 0.0f, 0.0f);
+        return tri;
+    }
+
+    Array!Triangle tris;
+    foreach(i; 0..5)
+        tris.append(makeTri(i * 3.0f));
+
+    // More triangles than a single leaf can hold forces the root to split into children
+    auto bvh = New!(BVHTree!Triangle)(tris, 4);
+    scope(exit) tris.free();
+    scope(exit) bvh.free();
+
+    // A sphere near the first triangle must yield it and never reach the far
+    // end of the mesh; leaf siblings may be returned as false positives
+    Sphere sphere = Sphere(Vector3f(0, 0.01f, -0.5f), 1.5f);
+    bool foundFirst = false;
+    bool foundLast = false;
+    foreach(tri; bvh.root.traverseBySphere(&sphere))
+    {
+        if (tri.barycenter == Vector3f(0, 0, 0))
+            foundFirst = true;
+        if (tri.barycenter == Vector3f(12, 0, 0))
+            foundLast = true;
+    }
+    assert(foundFirst);
+    assert(!foundLast);
+
+    // A sphere that envelopes the whole mesh must yield all triangles
+    Sphere bigSphere = Sphere(Vector3f(6, 0.01f, 0.0f), 8.0f);
+    uint count = 0;
+    foreach(tri; bvh.root.traverseBySphere(&bigSphere))
+        count++;
+    assert(count == 5);
+
+    // Downward ray through the first triangle
+    Ray ray = Ray(Vector3f(0, 5, 0), Vector3f(0, -5, 0));
+    uint rayHits = 0;
+    foreach(tri; bvh.root.traverseByRay(&ray))
+    {
+        Vector3f ip;
+        if (ray.intersectTriangle(tri, ip))
+        {
+            rayHits++;
+            assert(distance(ip, Vector3f(0, 0, 0)) < 1.0e-4f);
+        }
+    }
+    assert(rayHits == 1);
+
+    // Downward ray through the last triangle
+    Ray farRay = Ray(Vector3f(12, 5, 0), Vector3f(12, -5, 0));
+    uint farHits = 0;
+    foreach(tri; bvh.root.traverseByRay(&farRay))
+    {
+        Vector3f ip;
+        if (farRay.intersectTriangle(tri, ip))
+            farHits++;
+    }
+    assert(farHits == 1);
 }
 
