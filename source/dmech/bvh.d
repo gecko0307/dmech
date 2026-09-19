@@ -39,7 +39,7 @@ import dlib.math.vector;
 import dlib.geometry.aabb;
 import dlib.geometry.sphere;
 import dlib.geometry.ray;
-import dlib.geometry.triangle;
+import dlib.geometry.intersection;
 
 /*
  * Bounding Volume Hierarchy implementation
@@ -166,9 +166,7 @@ struct SphereTraverseAggregate(T)
     {
         int result = 0;
         
-        Vector3f cn;
-        float pd;
-        if (node.aabb.intersectsSphere(*sphere, cn, pd))
+        if (intrSphereVsAABB(*sphere, node.aabb).fact)
         {        
             if (node.child[0] !is null)
             {
