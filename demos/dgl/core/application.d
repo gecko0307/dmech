@@ -167,9 +167,8 @@ class Application: EventListener
     }
 }
 
-// TODO:
-// Under Linunx, user should be able to select
-// between system libraries and local ones
+// Under Linux, use system libraries when available and
+// fall back to the bundled ones otherwise
 void loadLibraries()
 {
     DerelictGL.load();
@@ -182,8 +181,15 @@ void loadLibraries()
     }
     version(linux)
     {
-        DerelictSDL.load("./lib/libsdl.so");
-        DerelictFT.load("./lib/libfreetype.so");
+        try
+            DerelictSDL.load();
+        catch (Exception e)
+            DerelictSDL.load("./lib/libsdl.so");
+
+        try
+            DerelictFT.load();
+        catch (Exception e)
+            DerelictFT.load("./lib/libfreetype.so");
     }
     version(OSX)
     {
