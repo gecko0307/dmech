@@ -39,6 +39,7 @@ import dlib.math.vector;
 import dlib.geometry.aabb;
 import dlib.geometry.sphere;
 import dlib.geometry.ray;
+import dlib.geometry.intersection;
 
 /*
  * Bounding Volume Hierarchy implementation
@@ -165,9 +166,7 @@ struct SphereTraverseAggregate(T)
     {
         int result = 0;
         
-        Vector3f cn;
-        float pd;
-        if (node.aabb.intersectsSphere(*sphere, cn, pd))
+        if (intrSphereVsAABB(*sphere, node.aabb).fact)
         {        
             if (node.child[0] !is null)
             {
@@ -345,7 +344,7 @@ class BVHTree(T)
 
         Array!T leftObjects;
         Array!T rightObjects;
-        
+
         foreach(obj; node.objects.data)
         {
             if (boxes[0].intersectsAABB(obj.boundingBox))
@@ -440,5 +439,76 @@ class BVHTree(T)
         float depth = bbox.pmax.z - bbox.pmin.z;
         return 2.0f * (width * height + width * depth + height * depth);
     }
+}
+
+unittest
+{
+    // Triangles lying in the XZ plane (y = 0), spread along the X axis
+    Triangle makeTri(float cx)
+    {
+        Triangle tri;
+        tri.v[0] = Vector3f(cx - 1.0f, 0.0f, -1.0f);
+        tri.v[1] = Vector3f(cx + 1.0f, 0.0f,  0.0f);
+        tri.v[2] = Vector3f(cx - 1.0f, 0.0f,  1.0f);
+        tri.normal = Vector3f(0, 1, 0);
+        tri.barycenter = Vector3f(cx, 0.0f, 0.0f);
+        return tri;
+    }
+
+    Array!Triangle tris;
+    foreach(i; 0..5)
+        tris.append(makeTri(i * 3.0f));
+
+    // More triangles than a single leaf can hold forces the root to split into children
+    auto bvh = New!(BVHTree!Triangle)(tris, 4);
+    scope(exit) tris.free();
+    scope(exit) bvh.free();
+
+    // A sphere near the first triangle must yield it and never reach the far
+    // end of the mesh; leaf siblings may be returned as false positives
+    Sphere sphere = Sphere(Vector3f(0, 0.01f, -0.5f), 1.5f);
+    bool foundFirst = false;
+    bool foundLast = false;
+    foreach(tri; bvh.root.traverseBySphere(&sphere))
+    {
+        if (tri.barycenter == Vector3f(0, 0, 0))
+            foundFirst = true;
+        if (tri.barycenter == Vector3f(12, 0, 0))
+            foundLast = true;
+    }
+    assert(foundFirst);
+    assert(!foundLast);
+
+    // A sphere that envelopes the whole mesh must yield all triangles
+    Sphere bigSphere = Sphere(Vector3f(6, 0.01f, 0.0f), 8.0f);
+    uint count = 0;
+    foreach(tri; bvh.root.traverseBySphere(&bigSphere))
+        count++;
+    assert(count == 5);
+
+    // Downward ray through the first triangle
+    Ray ray = Ray(Vector3f(0, 5, 0), Vector3f(0, -5, 0));
+    uint rayHits = 0;
+    foreach(tri; bvh.root.traverseByRay(&ray))
+    {
+        Vector3f ip;
+        if (ray.intersectTriangle(tri, ip))
+        {
+            rayHits++;
+            assert(distance(ip, Vector3f(0, 0, 0)) < 1.0e-4f);
+        }
+    }
+    assert(rayHits == 1);
+
+    // Downward ray through the last triangle
+    Ray farRay = Ray(Vector3f(12, 5, 0), Vector3f(12, -5, 0));
+    uint farHits = 0;
+    foreach(tri; bvh.root.traverseByRay(&farRay))
+    {
+        Vector3f ip;
+        if (farRay.intersectTriangle(tri, ip))
+            farHits++;
+    }
+    assert(farHits == 1);
 }
 
